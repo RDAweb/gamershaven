@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Galactic Defender</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap">
+  <style>
+    :root {
+      --primary: #00f0ff;
+      --secondary: #ff00f0;
+      --accent: #f0ff00;
+      --dark: #000033;
+      --light: #e0e0ff;
+      --danger: #ff0033;
+      --success: #00ff99;
+      --player-color: #00aaff;
+      --enemy-color: #ff3366;
+      --bullet-color: #ffff00;
+      --particle-color: #ffffff;
+      --border-radius: 8px;
+      --box-shadow: 0 0 15px;
+      --transition: all 0.2s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      touch-action: manipulation;
+    }
+
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background-color: var(--dark);
+      color: var(--light);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+      height: 80vh;
+      max-height: 700px;
+      background-color: #000011;
+      border: 3px solid var(--primary);
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      box-shadow: var(--box-shadow) rgba(0, 240, 255, 0.3);
+    }
+
+    #stars {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .star {
+      position: absolute;
+      background-color: white;
+      border-radius: 50%;
+    }
+
+    #player {
+      position: absolute;
+      width: 40px;
+      height: 25px;
+      background-color: var(--player-color);
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: var(--border-radius);
+      z-index: 10;
+      box-shadow: 0 0 10px var(--player-color);
+      transition: var(--transition);
+    }
+
+    #player::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 10px;
+      background-color: var(--player-color);
+      top: -10px;
+      left: 0;
+      border-radius: 50% 50% 0 0;
+      opacity: 0.5;
+    }
+
+    .enemy {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      background-color: var(--enemy-color);
+      border-radius: 5px;
+      z-index: 5;
+      box-shadow: 0 0 10px var(--enemy-color);
+      transition: var(--transition);
+    }
+
+    .enemy::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 6px;
+      background-color: var(--enemy-color);
+      bottom: -6px;
+      left: 0;
+      border-radius: 0 0 50% 50%;
+      opacity: 0.5;
+    }
+
+    .bullet {
+      position: absolute;
+      width: 4px;
+      height: 15px;
+      background-color: var(--bullet-color);
+      border-radius: 2px;
+      z-index: 8;
+      box-shadow: 0 0 5px var(--bullet-color);
+    }
+
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background-color: var(--particle-color);
+      border-radius: 50%;
+      z-index: 9;
+      opacity: 0.8;
+    }
+
+    #hud {
+      position: absolute;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 10px;
+      z-index: 20;
+    }
+
+    .hud-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 14px;
+      text-shadow: 0 0 5px var(--primary);
+    }
+
+    #score {
+      color: var(--success);
+    }
+
+    #lives {
+      color: var(--danger);
+    }
+
+    #level {
+      color: var(--accent);
+    }
+
+    #game-over {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 30;
+      display: none;
+    }
+
+    #game-over h2 {
+      color: var(--danger);
+      font-size: 2rem;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px var(--danger);
+    }
+
+    #final-score {
+      color: var(--success);
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      padding: 12px 25px;
+      border: none;
+      border-radius: var(--border-radius);
+      background-color: var(--primary);
+      color: var(--dark);
+      font-family: 'Orbitron', sans-serif;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 0 10px var(--primary);
+    }
+
+    .btn:hover {
+      background-color: var(--secondary);
+      box-shadow: 0 0 15px var(--secondary);
+      transform: translateY(-2px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    #controls {
+      position: absolute;
+      bottom: 10px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      z-index: 20;
+      padding: 0 20px;
+    }
+
+    .control-btn {
+      padding: 15px;
+      border-radius: 50%;
+      background-color: rgba(0, 0, 51, 0.7);
+      border: 2px solid var(--primary);
+      color: var(--light);
+      font-size: 1.2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      touch-action: manipulation;
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+    }
+
+    #shoot-btn {
+      background-color: rgba(255, 0, 48, 0.7);
+      border-color: var(--danger);
+      width: 60px;
+      height: 60px;
+      font-size: 1.5rem;
+    }
+
+    #pause-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 8px 15px;
+      border-radius: var(--border-radius);
+      background-color: rgba(0, 0, 51, 0.7);
+      border: 2px solid var(--primary);
+      color: var(--light);
+      z-index: 30;
+      cursor: pointer;
+    }
+
+    #start-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 17, 0.9);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 40;
+      text-align: center;
+    }
+
+    #start-screen h1 {
+      color: var(--primary);
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px var(--primary);
+    }
+
+    #start-screen p {
+      color: var(--light);
+      margin-bottom: 30px;
+      max-width: 80%;
+    }
+
+    #difficulty {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    #difficulty button {
+      padding: 8px 15px;
+      background-color: transparent;
+      border: 2px solid var(--primary);
+      color: var(--light);
+    }
+
+    #difficulty button.active {
+      background-color: var(--primary);
+      color: var(--dark);
+    }
+
+    @media (max-width: 500px) {
+      #game-container {
+        height: 70vh;
+        max-height: none;
+      }
+      
+      .hud-item {
+        font-size: 12px;
+      }
+      
+      #controls {
+        gap: 10px;
+      }
+      
+      .control-btn {
+        padding: 12px;
+        font-size: 1rem;
+      }
+      
+      #shoot-btn {
+        width: 50px;
+        height: 50px;
+      }
+    }
+
+    /* Animations */
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+
+    .pulse {
+      animation: pulse 0.5s ease;
+    }
+
+    .shake {
+      animation: shake 0.5s ease;
+    }
+
+    /* Enemy types */
+    .enemy-type1 {
+      background-color: #ff3366;
+      box-shadow: 0 0 10px #ff3366;
+    }
+    .enemy-type2 {
+      background-color: #ff9933;
+      box-shadow: 0 0 10px #ff9933;
+    }
+    .enemy-type3 {
+      background-color: #33ff66;
+      box-shadow: 0 0 10px #33ff66;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div id="stars"></div>
+    <div id="player"></div>
+    
+    <div id="hud">
+      <div class="hud-item" id="score">SCORE: 0</div>
+      <div class="hud-item" id="level">LEVEL: 1</div>
+      <div class="hud-item" id="lives">LIVES: 3</div>
+    </div>
+    
+    <button id="pause-btn">PAUSE</button>
+    
+    <div id="game-over">
+      <h2>GAME OVER</h2>
+      <div id="final-score">SCORE: 0</div>
+      <button class="btn" id="restart-btn">PLAY AGAIN</button>
+    </div>
+    
+    <div id="controls">
+      <button class="control-btn" id="left-btn">←</button>
+      <button class="control-btn" id="shoot-btn">⚡</button>
+      <button class="control-btn" id="right-btn">→</button>
+    </div>
+    
+    <div id="start-screen">
+      <h1>GALACTIC DEFENDER</h1>
+      <p>Defend the galaxy from invading alien forces! Use arrow keys or touch controls to move and spacebar/shoot button to fire.</p>
+      <div id="difficulty">
+        <button class="active" data-difficulty="easy">EASY</button>
+        <button data-difficulty="medium">MEDIUM</button>
+        <button data-difficulty="hard">HARD</button>
+      </div>
+      <button class="btn" id="start-btn">START GAME</button>
+    </div>
+  </div>
+
+  <script>
+    // Game elements
+    const gameContainer = document.getElementById('game-container');
+    const player = document.getElementById('player');
+    const scoreDisplay = document.getElementById('score');
+    const livesDisplay = document.getElementById('lives');
+    const levelDisplay = document.getElementById('level');
+    const gameOverDisplay = document.getElementById('game-over');
+    const finalScoreDisplay = document.getElementById('final-score');
+    const restartBtn = document.getElementById('restart-btn');
+    const leftBtn = document.getElementById('left-btn');
+    const rightBtn = document.getElementById('right-btn');
+    const shootBtn = document.getElementById('shoot-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const startScreen = document.getElementById('start-screen');
+    const startBtn = document.getElementById('start-btn');
+    const difficultyButtons = document.querySelectorAll('#difficulty button');
+    const starsContainer = document.getElementById('stars');
+
+    // Game state
+    let score = 0;
+    let lives = 3;
+    let level = 1;
+    let gameRunning = false;
+    let gamePaused = false;
+    let playerX = gameContainer.offsetWidth / 2 - 20;
+    let bullets = [];
+    let enemies = [];
+    let particles = [];
+    let enemySpeed = 1;
+    let enemyDirection = 1;
+    let enemyMoveDown = false;
+    let lastEnemySpawn = 0;
+    let lastFrameTime = 0;
+    let difficulty = 'easy';
+    let enemySpawnRate = 2000;
+    let enemyTypes = ['enemy-type1', 'enemy-type2', 'enemy-type3'];
+    let enemyPoints = [10, 20, 30];
+
+    // Create stars background
+    function createStars() {
+      const starsCount = 100;
+      for (let i = 0; i < starsCount; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.width = `${Math.random() * 3}px`;
+        star.style.height = star.style.width;
+        star.style.left = `${Math.random() * 100}%`;
+        star.style.top = `${Math.random() * 100}%`;
+        star.style.opacity = Math.random();
+        starsContainer.appendChild(star);
+        
+        // Twinkle animation
+        setInterval(() => {
+          star.style.opacity = Math.random();
+        }, Math.random() * 2000 + 1000);
+      }
+    }
+
+    // Initialize game
+    function initGame() {
+      // Clear existing game elements
+      document.querySelectorAll('.enemy').forEach(e => e.remove());
+      document.querySelectorAll('.bullet').forEach(b => b.remove());
+      document.querySelectorAll('.particle').forEach(p => p.remove());
+      
+      // Reset game state
+      score = 0;
+      lives = 3;
+      level = 1;
+      playerX = gameContainer.offsetWidth / 2 - 20;
+      bullets = [];
+      enemies = [];
+      particles = [];
+      enemySpeed = 1;
+      enemyDirection = 1;
+      
+      // Update displays
+      scoreDisplay.textContent = `SCORE: ${score}`;
+      livesDisplay.textContent = `LIVES: ${lives}`;
+      levelDisplay.textContent = `LEVEL: ${level}`;
+      player.style.left = `${playerX}px`;
+      
+      // Set difficulty
+      switch(difficulty) {
+        case 'easy':
+          enemySpawnRate = 2500;
+          break;
+        case 'medium':
+          enemySpawnRate = 1500;
+          break;
+        case 'hard':
+          enemySpawnRate = 1000;
+          break;
+      }
+      
+      gameOverDisplay.style.display = 'none';
+      gameRunning = true;
+      gamePaused = false;
+      pauseBtn.textContent = 'PAUSE';
+      
+      // Start game loop
+      lastFrameTime = performance.now();
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Move player
+    const movePlayer = (direction) => {
+      if (!gameRunning || gamePaused) return;
+      
+      const moveAmount = 10 + (level * 0.5);
+      playerX += direction * moveAmount;
+      
+      // Keep player within bounds
+      if (playerX < 0) playerX = 0;
+      if (playerX > gameContainer.offsetWidth - 40) playerX = gameContainer.offsetWidth - 40;
+      
+      player.style.left = `${playerX}px`;
+    };
+
+    // Keyboard controls
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') movePlayer(-1);
+      if (e.key === 'ArrowRight') movePlayer(1);
+      if (e.key === ' ' && gameRunning && !gamePaused) shoot();
+      if (e.key === 'p' || e.key === 'P') togglePause();
+    });
+
+    // Touch controls
+    leftBtn.addEventListener('click', () => movePlayer(-1));
+    rightBtn.addEventListener('click', () => movePlayer(1));
+    shootBtn.addEventListener('click', () => {
+      if (gameRunning && !gamePaused) shoot();
+    });
+    pauseBtn.addEventListener('click', togglePause);
+
+    // Toggle pause
+    function togglePause() {
+      if (!gameRunning) return;
+      
+      gamePaused = !gamePaused;
+      pauseBtn.textContent = gamePaused ? 'RESUME' : 'PAUSE';
+      
+      if (gamePaused) {
+        gameContainer.style.borderColor = '#ff9900';
+      } else {
+        gameContainer.style.borderColor = 'var(--primary)';
+        lastFrameTime = performance.now();
+        requestAnimationFrame(gameLoop);
+      }
+    }
+
+    // Shooting
+    const shoot = () => {
+      if (!gameRunning || gamePaused) return;
+      
+      const bullet = document.createElement('div');
+      bullet.className = 'bullet';
+      bullet.style.left = `${playerX + 18}px`;
+      bullet.style.bottom = '55px';
+      gameContainer.appendChild(bullet);
+      
+      bullets.push({
+        element: bullet,
+        x: playerX + 18,
+        y: gameContainer.offsetHeight - 55,
+        speed: 8 + (level * 0.5)
+      });
+      
+      // Play shoot sound
+      playSound('shoot');
+    };
+
+    // Create particles
+    function createParticles(x, y, color, count = 10) {
+      for (let i = 0; i < count; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.backgroundColor = color || 'white';
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        gameContainer.appendChild(particle);
+        
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 3 + 1;
+        const lifetime = Math.random() * 1000 + 500;
+        
+        particles.push({
+          element: particle,
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          createdAt: performance.now(),
+          lifetime: lifetime
+        });
+      }
+    }
+
+    // Spawn enemies
+    const spawnEnemy = () => {
+      const enemyType = Math.floor(Math.random() * enemyTypes.length);
+      const enemy = document.createElement('div');
+      enemy.className = `enemy ${enemyTypes[enemyType]}`;
+      
+      const x = Math.random() * (gameContainer.offsetWidth - 30);
+      const y = Math.random() * 100 + 20;
+      
+      enemy.style.left = `${x}px`;
+      enemy.style.top = `${y}px`;
+      gameContainer.appendChild(enemy);
+      
+      enemies.push({
+        element: enemy,
+        x: x,
+        y: y,
+        type: enemyType,
+        speed: enemySpeed + (level * 0.1)
+      });
+    };
+
+    // Play sound
+    function playSound(type) {
+      // In a real game, you would play actual sound files here
+      // This is a placeholder for the sound functionality
+      console.log(`Playing ${type} sound`);
+    }
+
+    // Game loop
+    const gameLoop = (currentTime) => {
+      if (!gameRunning || gamePaused) return;
+      
+      const deltaTime = currentTime - lastFrameTime;
+      lastFrameTime = currentTime;
+      
+      // Move bullets
+      bullets.forEach((bullet, index) => {
+        bullet.y -= bullet.speed;
+        bullet.element.style.bottom = `${bullet.y}px`;
+        
+        // Remove bullets that go off screen
+        if (bullet.y < 0) {
+          bullet.element.remove();
+          bullets.splice(index, 1);
+        }
+        
+        // Check for bullet-enemy collisions
+        enemies.forEach((enemy, enemyIndex) => {
+          const bulletRect = bullet.element.getBoundingClientRect();
+          const enemyRect = enemy.element.getBoundingClientRect();
+          
+          if (
+            bulletRect.left < enemyRect.right &&
+            bulletRect.right > enemyRect.left &&
+            bulletRect.top < enemyRect.bottom &&
+            bulletRect.bottom > enemyRect.top
+          ) {
+            // Hit!
+            createParticles(
+              enemy.x + 15, 
+              enemy.y + 15, 
+              getComputedStyle(enemy.element).backgroundColor,
+              15
+            );
+            
+            enemy.element.remove();
+            enemies.splice(enemyIndex, 1);
+            bullet.element.remove();
+            bullets.splice(index, 1);
+            
+            // Add score based on enemy type
+            score += enemyPoints[enemy.type];
+            scoreDisplay.textContent = `SCORE: ${score}`;
+            
+            // Play explosion sound
+            playSound('explosion');
+            
+            // Check for level up
+            if (score >= level * 500) {
+              levelUp();
+            }
+          }
+        });
+      });
+      
+      // Move enemies
+      enemies.forEach((enemy) => {
+        enemy.x += enemy.speed * enemyDirection;
+        enemy.element.style.left = `${enemy.x}px`;
+        
+        // Change direction if hitting edge
+        if (enemy.x <= 0 || enemy.x >= gameContainer.offsetWidth - 30) {
+          enemyDirection *= -1;
+          enemyMoveDown = true;
+        }
+      });
+      
+      // Move enemies down if needed
+      if (enemyMoveDown) {
+        enemies.forEach((enemy) => {
+          enemy.y += 20;
+          enemy.element.style.top = `${enemy.y}px`;
+          
+          // Check if enemy reached bottom
+          if (enemy.y > gameContainer.offsetHeight - 60) {
+            enemy.element.remove();
+            enemies.splice(enemies.indexOf(enemy), 1);
+            loseLife();
+          }
+        });
+        
+        enemyMoveDown = false;
+      }
+      
+      // Spawn new enemies
+      if (currentTime - lastEnemySpawn > enemySpawnRate) {
+        spawnEnemy();
+        lastEnemySpawn = currentTime;
+      }
+      
+      // Update particles
+      particles.forEach((particle, index) => {
+        const age = currentTime - particle.createdAt;
+        if (age > particle.lifetime) {
+          particle.element.remove();
+          particles.splice(index, 1);
+        } else {
+          particle.x += particle.vx;
+          particle.y += particle.vy;
+          particle.element.style.left = `${particle.x}px`;
+          particle.element.style.top = `${particle.y}px`;
+          particle.element.style.opacity = 1 - (age / particle.lifetime);
+        }
+      });
+      
+      requestAnimationFrame(gameLoop);
+    };
+
+    // Level up
+    function levelUp() {
+      level++;
+      levelDisplay.textContent = `LEVEL: ${level}`;
+      gameContainer.classList.add('pulse');
+      
+      // Play level up sound
+      playSound('levelup');
+      
+      setTimeout(() => {
+        gameContainer.classList.remove('pulse');
+      }, 500);
+    }
+
+    // Lose a life
+    function loseLife() {
+      lives--;
+      livesDisplay.textContent = `LIVES: ${lives}`;
+      gameContainer.classList.add('shake');
+      
+      // Play hit sound
+      playSound('hit');
+      
+      setTimeout(() => {
+        gameContainer.classList.remove('shake');
+      }, 500);
+      
+      if (lives <= 0) {
+        gameOver();
+      }
+    }
+
+    // Game over
+    const gameOver = () => {
+      gameRunning = false;
+      finalScoreDisplay.textContent = `SCORE: ${score}`;
+      gameOverDisplay.style.display = 'block';
+      
+      // Play game over sound
+      playSound('gameover');
+    };
+
+    // Restart game
+    restartBtn.addEventListener('click', () => {
+      gameOverDisplay.style.display = 'none';
+      initGame();
+    });
+
+    // Start game
+    startBtn.addEventListener('click', () => {
+      startScreen.style.display = 'none';
+      initGame();
+    });
+
+    // Set difficulty
+    difficultyButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        difficultyButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        difficulty = button.dataset.difficulty;
+      });
+    });
+
+    // Initialize stars and wait for game start
+    createStars();
+  </script>
+</body>
+</html>

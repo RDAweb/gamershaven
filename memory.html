@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memory Match</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap">
+  <style>
+    :root {
+      --primary: #4361ee;
+      --secondary: #3f37c9;
+      --accent: #4895ef;
+      --light: #f8f9fa;
+      --dark: #212529;
+      --success: #4cc9f0;
+      --danger: #f72585;
+      --warning: #f8961e;
+      --border-radius: 12px;
+      --box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #f5f7ff;
+      color: var(--dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    header {
+      text-align: center;
+      margin: 20px 0;
+      color: var(--primary);
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 800px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 500px;
+      margin-bottom: 20px;
+      background: white;
+      padding: 15px 25px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      width: 100%;
+      max-width: 500px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 500px) {
+      .grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+    }
+
+    .card {
+      aspect-ratio: 1/1;
+      background: white;
+      border-radius: var(--border-radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      cursor: pointer;
+      user-select: none;
+      transition: var(--transition);
+      box-shadow: var(--box-shadow);
+      position: relative;
+      transform-style: preserve-3d;
+      transform: rotateY(0deg);
+    }
+
+    .card .front, .card .back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--border-radius);
+    }
+
+    .card .front {
+      background: white;
+      transform: rotateY(180deg);
+    }
+
+    .card .back {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      font-size: 1.5rem;
+    }
+
+    .card.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .card.matched {
+      animation: matched 0.5s ease forwards;
+    }
+
+    @keyframes matched {
+      0% { transform: rotateY(180deg) scale(1); }
+      50% { transform: rotateY(180deg) scale(1.1); }
+      100% { transform: rotateY(180deg) scale(1); }
+    }
+
+    .card.shake {
+      animation: shake 0.5s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: rotateY(180deg) translateX(0); }
+      20%, 60% { transform: rotateY(180deg) translateX(-5px); }
+      40%, 80% { transform: rotateY(180deg) translateX(5px); }
+    }
+
+    .controls {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    button {
+      padding: 12px 25px;
+      border: none;
+      border-radius: var(--border-radius);
+      background: var(--primary);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: var(--box-shadow);
+    }
+
+    button:hover {
+      background: var(--secondary);
+      transform: translateY(-2px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .difficulty {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .difficulty button {
+      padding: 8px 15px;
+      font-size: 0.9rem;
+    }
+
+    .difficulty button.active {
+      background: var(--secondary);
+    }
+
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: var(--transition);
+    }
+
+    .modal.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: var(--border-radius);
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+      transform: translateY(-20px);
+      transition: var(--transition);
+      box-shadow: var(--box-shadow);
+    }
+
+    .modal.show .modal-content {
+      transform: translateY(0);
+    }
+
+    .modal h2 {
+      color: var(--primary);
+      margin-bottom: 15px;
+    }
+
+    .modal p {
+      margin-bottom: 20px;
+    }
+
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background-color: var(--accent);
+      opacity: 0;
+      z-index: 99;
+      animation: confetti 3s ease forwards;
+    }
+
+    @keyframes confetti {
+      0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Memory Match</h1>
+    <p>Find all matching pairs to win!</p>
+  </header>
+
+  <div class="game-container">
+    <div class="difficulty">
+      <button class="active" data-size="4">Easy (4×4)</button>
+      <button data-size="6">Medium (6×6)</button>
+      <button data-size="8">Hard (8×8)</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value" id="moves">0</div>
+        <div class="stat-label">Moves</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="timer">0</div>
+        <div class="stat-label">Seconds</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="matches">0</div>
+        <div class="stat-label">Matches</div>
+      </div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="controls">
+      <button id="restart">Restart Game</button>
+      <button id="new-game">New Game</button>
+    </div>
+  </div>
+
+  <div class="modal" id="win-modal">
+    <div class="modal-content">
+      <h2>Congratulations! 🎉</h2>
+      <p>You completed the game in <span id="final-moves">0</span> moves and <span id="final-time">0</span> seconds!</p>
+      <button id="play-again">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    // Game variables
+    let gridSize = 4;
+    let icons = [];
+    let cardsArr = [];
+    let firstCard = null;
+    let secondCard = null;
+    let lockBoard = false;
+    let moves = 0;
+    let matches = 0;
+    let timer = 0;
+    let timerInterval = null;
+    let totalPairs = 0;
+
+    // DOM elements
+    const gridElement = document.getElementById('grid');
+    const movesElement = document.getElementById('moves');
+    const matchesElement = document.getElementById('matches');
+    const timerElement = document.getElementById('timer');
+    const restartButton = document.getElementById('restart');
+    const newGameButton = document.getElementById('new-game');
+    const playAgainButton = document.getElementById('play-again');
+    const winModal = document.getElementById('win-modal');
+    const finalMovesElement = document.getElementById('final-moves');
+    const finalTimeElement = document.getElementById('final-time');
+    const difficultyButtons = document.querySelectorAll('.difficulty button');
+
+    // Initialize game
+    function initGame(size) {
+      gridSize = size;
+      totalPairs = (size * size) / 2;
+      
+      // Select appropriate icons based on grid size
+      const allIcons = ['🐶', '🐱', '🦊', '🐼', '🐨', '🐵', '🐸', '🦁', 
+                       '🐯', '🐮', '🐷', '🐭', '🐹', '🐰', '🐻', '🐦', 
+                       '🐤', '🐧', '🐙', '🦄', '🦋', '🐞', '🦀', '🐳'];
+      icons = allIcons.slice(0, totalPairs);
+      
+      resetGame();
+      createGrid();
+    }
+
+    // Create grid based on current gridSize
+    function createGrid() {
+      gridElement.innerHTML = '';
+      gridElement.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+      
+      // Create card pairs
+      cardsArr = [...icons, ...icons];
+      
+      // Shuffle cards
+      shuffleCards();
+      
+      // Create card elements
+      cardsArr.forEach((icon, index) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        
+        const front = document.createElement('div');
+        front.className = 'front';
+        front.textContent = icon;
+        
+        const back = document.createElement('div');
+        back.className = 'back';
+        back.textContent = '?';
+        
+        card.appendChild(front);
+        card.appendChild(back);
+        card.dataset.icon = icon;
+        card.dataset.index = index;
+        card.addEventListener('click', flipCard);
+        gridElement.appendChild(card);
+      });
+    }
+
+    // Shuffle cards using Fisher-Yates algorithm
+    function shuffleCards() {
+      for (let i = cardsArr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cardsArr[i], cardsArr[j]] = [cardsArr[j], cardsArr[i]];
+      }
+    }
+
+    // Flip card when clicked
+    function flipCard() {
+      if (lockBoard) return;
+      if (this === firstCard) return;
+      if (this.classList.contains('matched')) return;
+      
+      this.classList.add('flipped');
+      
+      if (!firstCard) {
+        firstCard = this;
+        startTimer();
+        return;
+      }
+      
+      secondCard = this;
+      moves++;
+      movesElement.textContent = moves;
+      lockBoard = true;
+      
+      checkForMatch();
+    }
+
+    // Check if the two flipped cards match
+    function checkForMatch() {
+      const isMatch = firstCard.dataset.icon === secondCard.dataset.icon;
+      
+      if (isMatch) {
+        disableCards();
+        matches++;
+        matchesElement.textContent = matches;
+        
+        if (matches === totalPairs) {
+          endGame();
+        }
+      } else {
+        unflipCards();
+      }
+    }
+
+    // Disable matched cards
+    function disableCards() {
+      firstCard.classList.add('matched');
+      secondCard.classList.add('matched');
+      
+      firstCard.removeEventListener('click', flipCard);
+      secondCard.removeEventListener('click', flipCard);
+      
+      resetBoard();
+    }
+
+    // Unflip unmatched cards
+    function unflipCards() {
+      setTimeout(() => {
+        firstCard.classList.remove('flipped');
+        secondCard.classList.remove('flipped');
+        firstCard.classList.add('shake');
+        secondCard.classList.add('shake');
+        
+        setTimeout(() => {
+          firstCard.classList.remove('shake');
+          secondCard.classList.remove('shake');
+          resetBoard();
+        }, 500);
+      }, 800);
+    }
+
+    // Reset board after each turn
+    function resetBoard() {
+      [firstCard, secondCard, lockBoard] = [null, null, false];
+    }
+
+    // Start game timer
+    function startTimer() {
+      if (!timerInterval) {
+        timerInterval = setInterval(() => {
+          timer++;
+          timerElement.textContent = timer;
+        }, 1000);
+      }
+    }
+
+    // Stop game timer
+    function stopTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    // Reset game state
+    function resetGame() {
+      stopTimer();
+      moves = 0;
+      matches = 0;
+      timer = 0;
+      movesElement.textContent = moves;
+      matchesElement.textContent = matches;
+      timerElement.textContent = timer;
+      resetBoard();
+    }
+
+    // End game when all pairs are matched
+    function endGame() {
+      stopTimer();
+      finalMovesElement.textContent = moves;
+      finalTimeElement.textContent = timer;
+      winModal.classList.add('show');
+      createConfetti();
+    }
+
+    // Create confetti effect
+    function createConfetti() {
+      for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = `${Math.random() * 100}vw`;
+        confetti.style.backgroundColor = getRandomColor();
+        confetti.style.animationDelay = `${Math.random() * 2}s`;
+        document.body.appendChild(confetti);
+        
+        // Remove confetti after animation
+        setTimeout(() => {
+          confetti.remove();
+        }, 3000);
+      }
+    }
+
+    // Get random color for confetti
+    function getRandomColor() {
+      const colors = ['#4361ee', '#3f37c9', '#4895ef', '#4cc9f0', '#f72585', '#f8961e', '#7209b7', '#b5179e'];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    // Event listeners
+    restartButton.addEventListener('click', () => {
+      resetGame();
+      createGrid();
+    });
+
+    newGameButton.addEventListener('click', () => {
+      resetGame();
+      initGame(gridSize);
+    });
+
+    playAgainButton.addEventListener('click', () => {
+      winModal.classList.remove('show');
+      resetGame();
+      createGrid();
+    });
+
+    difficultyButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        difficultyButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        const newSize = parseInt(button.dataset.size);
+        resetGame();
+        initGame(newSize);
+      });
+    });
+
+    // Initialize with default size
+    initGame(4);
+  </script>
+</body>
+</html>

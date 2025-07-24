@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Pong Game</title>
+  <style>
+    :root {
+      --primary: #3498db;
+      --secondary: #2980b9;
+      --accent: #e74c3c;
+      --dark: #2c3e50;
+      --light: #ecf0f1;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      --neon: 0 0 10px rgba(59, 130, 246, 0.8);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Orbitron', 'Arial', sans-serif;
+    }
+    
+    body {
+      background-color: var(--dark);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    
+    .game-container {
+      position: relative;
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    
+    header {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      text-align: center;
+      text-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+      color: white;
+      letter-spacing: 2px;
+    }
+    
+    canvas {
+      background: #111;
+      display: block;
+      border-radius: 8px;
+      box-shadow: var(--shadow), var(--neon);
+      max-width: 100%;
+      height: auto;
+      aspect-ratio: 3/2;
+    }
+    
+    .score-container {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 15px;
+      font-size: 1.5rem;
+    }
+    
+    .score {
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-weight: bold;
+      text-shadow: 0 0 5px white;
+    }
+    
+    .controls {
+      display: none;
+      margin-top: 20px;
+      width: 100%;
+      max-width: 300px;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 10px;
+    }
+    
+    .control-btn {
+      background-color: rgba(59, 130, 246, 0.7);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 15px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: var(--shadow);
+    }
+    
+    .control-btn:active {
+      transform: scale(0.95);
+      background-color: rgba(29, 78, 216, 0.7);
+    }
+    
+    .up-btn {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    
+    .down-btn {
+      grid-column: 2;
+      grid-row: 2;
+    }
+    
+    .left-up-btn {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    
+    .left-down-btn {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    
+    .right-up-btn {
+      grid-column: 3;
+      grid-row: 1;
+    }
+    
+    .right-down-btn {
+      grid-column: 3;
+      grid-row: 2;
+    }
+    
+    .game-over {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border-radius: 8px;
+      z-index: 10;
+    }
+    
+    .game-over h2 {
+      color: var(--accent);
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px rgba(231, 76, 60, 0.8);
+    }
+    
+    .game-over p {
+      color: white;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+    }
+    
+    .restart-btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 1.2rem;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: var(--shadow);
+    }
+    
+    .restart-btn:hover {
+      background-color: var(--secondary);
+    }
+    
+    .start-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border-radius: 8px;
+      z-index: 10;
+    }
+    
+    .start-screen h2 {
+      color: var(--primary);
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+    }
+    
+    .start-btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 1.2rem;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: var(--shadow);
+    }
+    
+    .start-btn:hover {
+      background-color: var(--secondary);
+    }
+    
+    .instructions {
+      color: white;
+      text-align: center;
+      margin-bottom: 30px;
+      max-width: 80%;
+      line-height: 1.6;
+    }
+    
+    .difficulty {
+      margin: 20px 0;
+      display: flex;
+      gap: 10px;
+    }
+    
+    .difficulty-btn {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .difficulty-btn.active {
+      background-color: var(--primary);
+    }
+    
+    .center-line {
+      position: absolute;
+      width: 2px;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.1);
+      left: 50%;
+      top: 0;
+    }
+    
+    @media (max-width: 768px) {
+      header {
+        font-size: 2rem;
+      }
+      
+      canvas {
+        max-height: 60vh;
+      }
+      
+      .controls {
+        display: grid;
+      }
+      
+      .score {
+        font-size: 1.2rem;
+        padding: 8px 15px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      header {
+        font-size: 1.5rem;
+      }
+      
+      .game-over h2, .start-screen h2 {
+        font-size: 1.8rem;
+      }
+      
+      .game-over p {
+        font-size: 1.2rem;
+      }
+      
+      .instructions {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="game-container">
+    <header>PONG</header>
+    
+    <div class="score-container">
+      <div class="score" id="player1-score">0</div>
+      <div class="score" id="player2-score">0</div>
+    </div>
+    
+    <canvas id="pong"></canvas>
+    
+    <div class="controls">
+      <button class="control-btn left-up-btn" id="left-up-btn">W</button>
+      <button class="control-btn up-btn" id="up-btn">↑</button>
+      <button class="control-btn right-up-btn" id="right-up-btn">↑</button>
+      <button class="control-btn left-down-btn" id="left-down-btn">S</button>
+      <button class="control-btn down-btn" id="down-btn">↓</button>
+      <button class="control-btn right-down-btn" id="right-down-btn">↓</button>
+    </div>
+    
+    <div class="game-over" id="game-over">
+      <h2>GAME OVER</h2>
+      <p>Winner: <span id="winner">Player</span></p>
+      <button class="restart-btn" id="restart-btn">Play Again</button>
+    </div>
+    
+    <div class="start-screen" id="start-screen">
+      <h2>PONG</h2>
+      <p class="instructions">Player 1: Use W/S keys or left buttons<br>Player 2: Use ↑/↓ keys or right buttons</p>
+      <div class="difficulty">
+        <button class="difficulty-btn active" data-speed="5">Easy</button>
+        <button class="difficulty-btn" data-speed="7">Medium</button>
+        <button class="difficulty-btn" data-speed="9">Hard</button>
+      </div>
+      <button class="start-btn" id="start-btn">Start Game</button>
+    </div>
+  </div>
+
+  <script>
+    // Game elements
+    const canvas = document.getElementById('pong');
+    const ctx = canvas.getContext('2d');
+    const player1ScoreEl = document.getElementById('player1-score');
+    const player2ScoreEl = document.getElementById('player2-score');
+    const gameOverScreen = document.getElementById('game-over');
+    const startScreen = document.getElementById('start-screen');
+    const startBtn = document.getElementById('start-btn');
+    const restartBtn = document.getElementById('restart-btn');
+    const winnerEl = document.getElementById('winner');
+    const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+    
+    // Control buttons
+    const leftUpBtn = document.getElementById('left-up-btn');
+    const leftDownBtn = document.getElementById('left-down-btn');
+    const upBtn = document.getElementById('up-btn');
+    const downBtn = document.getElementById('down-btn');
+    const rightUpBtn = document.getElementById('right-up-btn');
+    const rightDownBtn = document.getElementById('right-down-btn');
+    
+    // Game settings
+    const paddleWidth = 12;
+    const paddleHeight = 100;
+    const ballSize = 10;
+    let paddleSpeed = 8;
+    let ballSpeed = 5;
+    
+    // Game state
+    let leftPaddle = { x: 0, y: 0, dy: 0 };
+    let rightPaddle = { x: 0, y: 0, dy: 0 };
+    let ball = { x: 0, y: 0, dx: 0, dy: 0 };
+    let player1Score = 0;
+    let player2Score = 0;
+    let gameActive = false;
+    let animationId;
+    
+    // Initialize game
+    function initGame() {
+      // Set canvas size
+      resizeCanvas();
+      
+      // Reset paddles
+      leftPaddle = {
+        x: 20,
+        y: canvas.height / 2 - paddleHeight / 2,
+        dy: 0
+      };
+      
+      rightPaddle = {
+        x: canvas.width - 20 - paddleWidth,
+        y: canvas.height / 2 - paddleHeight / 2,
+        dy: 0
+      };
+      
+      // Reset ball
+      resetBall();
+      
+      // Reset scores
+      player1Score = 0;
+      player2Score = 0;
+      updateScores();
+      
+      gameActive = true;
+    }
+    
+    // Resize canvas
+    function resizeCanvas() {
+      const maxWidth = Math.min(800, window.innerWidth - 40);
+      const maxHeight = Math.min(600, window.innerHeight - 200);
+      
+      // Maintain aspect ratio (3:2)
+      const width = Math.min(maxWidth, maxHeight * 1.5);
+      const height = width / 1.5;
+      
+      canvas.width = width;
+      canvas.height = height;
+    }
+    
+    // Reset ball position
+    function resetBall() {
+      ball = {
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        dx: ballSpeed * (Math.random() > 0.5 ? 1 : -1),
+        dy: ballSpeed * (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 0.5 + 0.5)
+      };
+    }
+    
+    // Update scores display
+    function updateScores() {
+      player1ScoreEl.textContent = player1Score;
+      player2ScoreEl.textContent = player2Score;
+    }
+    
+    // Draw game elements
+    function draw() {
+      // Clear canvas
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw center line
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.setLineDash([10, 10]);
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 2, 0);
+      ctx.lineTo(canvas.width / 2, canvas.height);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      // Draw paddles
+      ctx.fillStyle = 'white';
+      ctx.fillRect(leftPaddle.x, leftPaddle.y, paddleWidth, paddleHeight);
+      ctx.fillRect(rightPaddle.x, rightPaddle.y, paddleWidth, paddleHeight);
+      
+      // Draw ball
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ballSize, 0, Math.PI * 2);
+      ctx.fillStyle = 'white';
+      ctx.fill();
+      
+      // Draw scores
+      ctx.font = '40px Orbitron';
+      ctx.textAlign = 'center';
+      ctx.fillText(player1Score.toString(), canvas.width / 4, 50);
+      ctx.fillText(player2Score.toString(), canvas.width * 3/4, 50);
+    }
+    
+    // Update game state
+    function update() {
+      if (!gameActive) return;
+      
+      // Move paddles
+      leftPaddle.y += leftPaddle.dy;
+      rightPaddle.y += rightPaddle.dy;
+      
+      // Keep paddles on screen
+      if (leftPaddle.y < 0) leftPaddle.y = 0;
+      if (leftPaddle.y + paddleHeight > canvas.height) leftPaddle.y = canvas.height - paddleHeight;
+      if (rightPaddle.y < 0) rightPaddle.y = 0;
+      if (rightPaddle.y + paddleHeight > canvas.height) rightPaddle.y = canvas.height - paddleHeight;
+      
+      // Move ball
+      ball.x += ball.dx;
+      ball.y += ball.dy;
+      
+      // Ball collision with top and bottom
+      if (ball.y - ballSize < 0 || ball.y + ballSize > canvas.height) {
+        ball.dy = -ball.dy;
+      }
+      
+      // Ball collision with paddles
+      // Left paddle
+      if (
+        ball.x - ballSize < leftPaddle.x + paddleWidth &&
+        ball.y > leftPaddle.y &&
+        ball.y < leftPaddle.y + paddleHeight
+      ) {
+        // Calculate angle based on where ball hits paddle
+        const hitPosition = (ball.y - (leftPaddle.y + paddleHeight / 2)) / (paddleHeight / 2);
+        const angle = hitPosition * Math.PI / 4; // Max 45 degrees
+        
+        ball.dx = Math.cos(angle) * ballSpeed;
+        ball.dy = Math.sin(angle) * ballSpeed;
+        ball.x = leftPaddle.x + paddleWidth + ballSize;
+      }
+      
+      // Right paddle
+      if (
+        ball.x + ballSize > rightPaddle.x &&
+        ball.y > rightPaddle.y &&
+        ball.y < rightPaddle.y + paddleHeight
+      ) {
+        // Calculate angle based on where ball hits paddle
+        const hitPosition = (ball.y - (rightPaddle.y + paddleHeight / 2)) / (paddleHeight / 2);
+        const angle = hitPosition * Math.PI / 4; // Max 45 degrees
+        
+        ball.dx = -Math.cos(angle) * ballSpeed;
+        ball.dy = Math.sin(angle) * ballSpeed;
+        ball.x = rightPaddle.x - ballSize;
+      }
+      
+      // Scoring
+      if (ball.x - ballSize < 0) {
+        player2Score++;
+        updateScores();
+        checkGameOver();
+        resetBall();
+      }
+      
+      if (ball.x + ballSize > canvas.width) {
+        player1Score++;
+        updateScores();
+        checkGameOver();
+        resetBall();
+      }
+    }
+    
+    // Check if game is over
+    function checkGameOver() {
+      if (player1Score >= 5 || player2Score >= 5) {
+        gameActive = false;
+        winnerEl.textContent = player1Score >= 5 ? "Player 1" : "Player 2";
+        gameOverScreen.style.display = 'flex';
+        cancelAnimationFrame(animationId);
+      }
+    }
+    
+    // Game loop
+    function gameLoop() {
+      update();
+      draw();
+      animationId = requestAnimationFrame(gameLoop);
+    }
+    
+    // Start game
+    function startGame() {
+      startScreen.style.display = 'none';
+      gameOverScreen.style.display = 'none';
+      initGame();
+      gameLoop();
+    }
+    
+    // Event listeners for keyboard controls
+    document.addEventListener('keydown', (e) => {
+      if (!gameActive) return;
+      
+      switch(e.key) {
+        case 'w':
+          leftPaddle.dy = -paddleSpeed;
+          break;
+        case 's':
+          leftPaddle.dy = paddleSpeed;
+          break;
+        case 'ArrowUp':
+          rightPaddle.dy = -paddleSpeed;
+          break;
+        case 'ArrowDown':
+          rightPaddle.dy = paddleSpeed;
+          break;
+      }
+    });
+    
+    document.addEventListener('keyup', (e) => {
+      switch(e.key) {
+        case 'w':
+        case 's':
+          if (leftPaddle.dy === -paddleSpeed && e.key === 'w') leftPaddle.dy = 0;
+          if (leftPaddle.dy === paddleSpeed && e.key === 's') leftPaddle.dy = 0;
+          break;
+        case 'ArrowUp':
+        case 'ArrowDown':
+          if (rightPaddle.dy === -paddleSpeed && e.key === 'ArrowUp') rightPaddle.dy = 0;
+          if (rightPaddle.dy === paddleSpeed && e.key === 'ArrowDown') rightPaddle.dy = 0;
+          break;
+      }
+    });
+    
+    // Event listeners for control buttons
+    leftUpBtn.addEventListener('mousedown', () => leftPaddle.dy = -paddleSpeed);
+    leftUpBtn.addEventListener('mouseup', () => leftPaddle.dy = 0);
+    leftUpBtn.addEventListener('mouseleave', () => leftPaddle.dy = 0);
+    leftDownBtn.addEventListener('mousedown', () => leftPaddle.dy = paddleSpeed);
+    leftDownBtn.addEventListener('mouseup', () => leftPaddle.dy = 0);
+    leftDownBtn.addEventListener('mouseleave', () => leftPaddle.dy = 0);
+    
+    rightUpBtn.addEventListener('mousedown', () => rightPaddle.dy = -paddleSpeed);
+    rightUpBtn.addEventListener('mouseup', () => rightPaddle.dy = 0);
+    rightUpBtn.addEventListener('mouseleave', () => rightPaddle.dy = 0);
+    rightDownBtn.addEventListener('mousedown', () => rightPaddle.dy = paddleSpeed);
+    rightDownBtn.addEventListener('mouseup', () => rightPaddle.dy = 0);
+    rightDownBtn.addEventListener('mouseleave', () => rightPaddle.dy = 0);
+    
+    // Touch controls for mobile
+    canvas.addEventListener('touchstart', handleTouchStart, false);
+    canvas.addEventListener('touchmove', handleTouchMove, false);
+    
+    let touchY = null;
+    
+    function handleTouchStart(e) {
+      if (!gameActive) return;
+      const touch = e.touches[0];
+      touchY = touch.clientY;
+    }
+    
+    function handleTouchMove(e) {
+      if (!gameActive || touchY === null) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const currentY = touch.clientY;
+      const deltaY = currentY - touchY;
+      
+      // Determine which side of the screen was touched
+      if (touch.clientX < canvas.width / 2) {
+        // Left side - control left paddle
+        leftPaddle.dy = deltaY > 0 ? paddleSpeed : -paddleSpeed;
+      } else {
+        // Right side - control right paddle
+        rightPaddle.dy = deltaY > 0 ? paddleSpeed : -paddleSpeed;
+      }
+      
+      touchY = currentY;
+    }
+    
+    document.addEventListener('touchend', () => {
+      leftPaddle.dy = 0;
+      rightPaddle.dy = 0;
+      touchY = null;
+    });
+    
+    // Difficulty selection
+    difficultyBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        difficultyBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        ballSpeed = parseInt(btn.dataset.speed);
+      });
+    });
+    
+    // Start and restart buttons
+    startBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', startGame);
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      if (gameActive) {
+        // Adjust paddle positions
+        leftPaddle.y = Math.min(leftPaddle.y, canvas.height - paddleHeight);
+        rightPaddle.y = Math.min(rightPaddle.y, canvas.height - paddleHeight);
+      }
+    });
+    
+    // Initialize
+    resizeCanvas();
+  </script>
+</body>
+</html>

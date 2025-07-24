@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Connect 4</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #00ff9d;
+            --secondary-color: #00b8ff;
+            --accent-color: #ff2d75;
+            --background-dark: #0f0f1a;
+            --background-light: #1a1a2e;
+            --text-color: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --cell-dark: #2a2a3a;
+            --cell-light: #3a3a4a;
+            --red-piece: linear-gradient(135deg, #ff5e62, #ff2400);
+            --yellow-piece: linear-gradient(135deg, #ffd700, #ffaa00);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --glow: 0 0 15px rgba(0, 255, 157, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--background-dark);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+            overflow-x: hidden;
+        }
+
+        .background-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(0, 255, 157, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 80% 70%, rgba(0, 184, 255, 0.05) 0%, transparent 20%),
+                linear-gradient(to bottom, var(--background-dark), var(--background-light));
+            z-index: -1;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            font-weight: 700;
+        }
+
+        .game-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: rgba(26, 26, 46, 0.8);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .player-turn {
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .turn-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        .turn-indicator.red {
+            background: var(--red-piece);
+            color: #ff5e62;
+        }
+
+        .turn-indicator.yellow {
+            background: var(--yellow-piece);
+            color: #ffd700;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            width: 100%;
+            max-width: 600px;
+            aspect-ratio: 7/6;
+            background: linear-gradient(135deg, #2a2a3a, #1a1a2e);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column-reverse; /* Changed to column-reverse */
+            align-items: center;
+            padding: 5px;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .column:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .slot {
+            width: 100%;
+            aspect-ratio: 1/1;
+            border-radius: 50%;
+            margin: 3px 0;
+            background: var(--background-dark);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slot::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%);
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .slot.filled::before {
+            opacity: 1;
+        }
+
+        .slot.red {
+            background: var(--red-piece);
+            box-shadow: 0 0 15px rgba(255, 94, 98, 0.5);
+            animation: drop 0.5s ease-out;
+        }
+
+        .slot.yellow {
+            background: var(--yellow-piece);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+            animation: drop 0.5s ease-out;
+        }
+
+        @keyframes drop {
+            0% { transform: translateY(-500px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        .game-controls {
+            margin-top: 25px;
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .btn:hover::before {
+            opacity: 1;
+        }
+
+        .btn-restart {
+            background: linear-gradient(135deg, var(--accent-color), #ff5e8a);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 45, 117, 0.3);
+        }
+
+        .btn-help {
+            background: rgba(26, 26, 46, 0.8);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 15, 26, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: var(--transition);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background: var(--background-light);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            transform: translateY(-50px);
+            transition: var(--transition);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .modal-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .modal p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .modal .highlight {
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            color: var(--accent-color);
+        }
+
+        .win-modal .modal-content {
+            max-width: 350px;
+        }
+
+        .win-modal h2 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .win-modal p {
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--primary-color);
+            opacity: 0;
+            z-index: 99;
+        }
+
+        .winning-line {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 10;
+            transform-origin: 0 0;
+        }
+
+        @media (max-width: 700px) {
+            .board {
+                max-width: 90vw;
+                padding: 10px;
+            }
+
+            .slot {
+                margin: 2px 0;
+            }
+
+            .game-header {
+                flex-direction: column;
+                gap: 10px;
+                padding: 15px 10px;
+            }
+
+            .player-turn {
+                font-size: 1rem;
+            }
+
+            .game-controls {
+                flex-direction: column;
+            }
+        }
+
+        /* Tutorial styles */
+        .tutorial-steps {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .tutorial-step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .tutorial-step i {
+            color: var(--primary-color);
+            margin-right: 10px;
+            font-size: 1.2rem;
+            margin-top: 3px;
+        }
+
+        .tutorial-step-content {
+            flex: 1;
+        }
+
+        .tutorial-step h3 {
+            color: var(--text-color);
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .tutorial-step p {
+            margin-bottom: 0;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="background-pattern"></div>
+    
+    <div class="game-container">
+        <h1>NEON CONNECT 4</h1>
+        
+        <div class="game-header">
+            <div class="player-turn" id="turn-display">
+                <span class="turn-indicator red"></span>
+                <span id="turn-text">Red's Turn</span>
+            </div>
+        </div>
+        
+        <div class="board" id="board">
+            <!-- Columns will be generated by JavaScript -->
+        </div>
+        
+        <div class="game-controls">
+            <button class="btn btn-restart" id="restart-btn">
+                <i class="fas fa-redo"></i> Restart
+            </button>
+            <button class="btn btn-help" id="help-btn">
+                <i class="fas fa-question-circle"></i> Help
+            </button>
+        </div>
+    </div>
+    
+    <!-- Game Over Modal -->
+    <div class="modal win-modal" id="win-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="win-close">&times;</button>
+            <h2 id="win-title">Red Wins!</h2>
+            <p id="win-message">Congratulations on your victory!</p>
+            <button class="btn btn-restart" id="play-again-btn">
+                <i class="fas fa-play"></i> Play Again
+            </button>
+        </div>
+    </div>
+    
+    <!-- Help Modal -->
+    <div class="modal" id="help-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="help-close">&times;</button>
+            <h2>How to Play Connect 4</h2>
+            
+            <div class="tutorial-steps">
+                <div class="tutorial-step">
+                    <i class="fas fa-chess-pawn"></i>
+                    <div class="tutorial-step-content">
+                        <h3>Game Objective</h3>
+                        <p>Be the first to connect four of your colored discs in a row (horizontally, vertically, or diagonally).</p>
+                    </div>
+                </div>
+                
+                <div class="tutorial-step">
+                    <i class="fas fa-hand-pointer"></i>
+                    <div class="tutorial-step-content">
+                        <h3>Taking Turns</h3>
+                        <p>Players alternate turns, dropping one disc at a time into any column.</p>
+                    </div>
+                </div>
+                
+                <div class="tutorial-step">
+                    <i class="fas fa-trophy"></i>
+                    <div class="tutorial-step-content">
+                        <h3>Winning the Game</h3>
+                        <p>The first player to connect four discs wins. The game ends immediately when this happens.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn btn-restart" id="got-it-btn">
+                <i class="fas fa-thumbs-up"></i> Got It!
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const board = document.getElementById("board");
+        const turnDisplay = document.getElementById("turn-display");
+        const turnText = document.getElementById("turn-text");
+        const turnIndicator = turnDisplay.querySelector(".turn-indicator");
+        const restartBtn = document.getElementById("restart-btn");
+        const helpBtn = document.getElementById("help-btn");
+        const winModal = document.getElementById("win-modal");
+        const winTitle = document.getElementById("win-title");
+        const winMessage = document.getElementById("win-message");
+        const winClose = document.getElementById("win-close");
+        const playAgainBtn = document.getElementById("play-again-btn");
+        const helpModal = document.getElementById("help-modal");
+        const helpClose = document.getElementById("help-close");
+        const gotItBtn = document.getElementById("got-it-btn");
+
+        // Game state
+        let currentPlayer = "red";
+        let gameActive = true;
+        let boardState = [];
+        const rows = 6;
+        const cols = 7;
+
+        // Initialize the game
+        function initGame() {
+            // Clear the board
+            board.innerHTML = "";
+            boardState = Array(cols).fill().map(() => Array(rows).fill(null));
+            
+            // Create columns
+            for (let col = 0; col < cols; col++) {
+                const column = document.createElement("div");
+                column.className = "column";
+                column.dataset.col = col;
+                
+                // Create slots (now in reverse order)
+                for (let row = rows - 1; row >= 0; row--) {
+                    const slot = document.createElement("div");
+                    slot.className = "slot";
+                    slot.dataset.row = row;
+                    slot.dataset.col = col;
+                    column.appendChild(slot);
+                }
+                
+                // Add click handler
+                column.addEventListener("click", () => handleColumnClick(col));
+                board.appendChild(column);
+            }
+            
+            // Reset game state
+            currentPlayer = "red";
+            gameActive = true;
+            updateUI();
+        }
+
+        // Handle column clicks
+        function handleColumnClick(col) {
+            if (!gameActive) return;
+            
+            // Find the first empty slot in the column (from the bottom up)
+            const column = boardState[col];
+            let emptyRow = -1;
+            
+            // Check from bottom to top (row 5 to 0)
+            for (let row = rows - 1; row >= 0; row--) {
+                if (column[row] === null) {
+                    emptyRow = row;
+                    break;
+                }
+            }
+            
+            if (emptyRow === -1) return; // Column is full
+            
+            // Update board state
+            boardState[col][emptyRow] = currentPlayer;
+            
+            // Update UI
+            const slot = document.querySelector(`.slot[data-col="${col}"][data-row="${emptyRow}"]`);
+            slot.classList.add(currentPlayer, "filled");
+            
+            // Check for win
+            if (checkWin(col, emptyRow)) {
+                gameActive = false;
+                highlightWinningLine(col, emptyRow);
+                setTimeout(() => {
+                    winTitle.textContent = `${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)} Wins!`;
+                    winMessage.textContent = "Great job connecting four!";
+                    winModal.classList.add("active");
+                    createConfetti(currentPlayer);
+                }, 500);
+                return;
+            }
+            
+            // Check for draw
+            if (checkDraw()) {
+                gameActive = false;
+                setTimeout(() => {
+                    winTitle.textContent = "It's a Draw!";
+                    winMessage.textContent = "The board is full with no winner.";
+                    winModal.classList.add("active");
+                }, 500);
+                return;
+            }
+            
+            // Switch player
+            currentPlayer = currentPlayer === "red" ? "yellow" : "red";
+            updateUI();
+        }
+
+        // Check for a win
+        function checkWin(col, row) {
+            const directions = [
+                [1, 0],  // horizontal
+                [0, 1],  // vertical
+                [1, 1],  // diagonal down-right
+                [1, -1]  // diagonal up-right
+            ];
+            
+            for (const [dx, dy] of directions) {
+                let count = 1;
+                
+                // Check in positive direction
+                for (let i = 1; i < 4; i++) {
+                    const newCol = col + i * dx;
+                    const newRow = row + i * dy;
+                    
+                    if (
+                        newCol < 0 || newCol >= cols ||
+                        newRow < 0 || newRow >= rows ||
+                        boardState[newCol][newRow] !== currentPlayer
+                    ) {
+                        break;
+                    }
+                    
+                    count++;
+                }
+                
+                // Check in negative direction
+                for (let i = 1; i < 4; i++) {
+                    const newCol = col - i * dx;
+                    const newRow = row - i * dy;
+                    
+                    if (
+                        newCol < 0 || newCol >= cols ||
+                        newRow < 0 || newRow >= rows ||
+                        boardState[newCol][newRow] !== currentPlayer
+                    ) {
+                        break;
+                    }
+                    
+                    count++;
+                }
+                
+                if (count >= 4) {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
+        // Highlight the winning line
+        function highlightWinningLine(col, row) {
+            const directions = [
+                [1, 0],  // horizontal
+                [0, 1],  // vertical
+                [1, 1],  // diagonal down-right
+                [1, -1]  // diagonal up-right
+            ];
+            
+            for (const [dx, dy] of directions) {
+                let count = 1;
+                let winningCells = [{col, row}];
+                
+                // Check in positive direction
+                for (let i = 1; i < 4; i++) {
+                    const newCol = col + i * dx;
+                    const newRow = row + i * dy;
+                    
+                    if (
+                        newCol < 0 || newCol >= cols ||
+                        newRow < 0 || newRow >= rows ||
+                        boardState[newCol][newRow] !== currentPlayer
+                    ) {
+                        break;
+                    }
+                    
+                    count++;
+                    winningCells.push({col: newCol, row: newRow});
+                }
+                
+                // Check in negative direction
+                for (let i = 1; i < 4; i++) {
+                    const newCol = col - i * dx;
+                    const newRow = row - i * dy;
+                    
+                    if (
+                        newCol < 0 || newCol >= cols ||
+                        newRow < 0 || newRow >= rows ||
+                        boardState[newCol][newRow] !== currentPlayer
+                    ) {
+                        break;
+                    }
+                    
+                    count++;
+                    winningCells.push({col: newCol, row: newRow});
+                }
+                
+                if (count >= 4) {
+                    // Create winning line
+                    const firstCell = document.querySelector(`.slot[data-col="${winningCells[0].col}"][data-row="${winningCells[0].row}"]`);
+                    const lastCell = document.querySelector(`.slot[data-col="${winningCells[winningCells.length-1].col}"][data-row="${winningCells[winningCells.length-1].row}"]`);
+                    
+                    const firstRect = firstCell.getBoundingClientRect();
+                    const lastRect = lastCell.getBoundingClientRect();
+                    
+                    const line = document.createElement("div");
+                    line.className = "winning-line";
+                    
+                    const boardRect = board.getBoundingClientRect();
+                    
+                    const x1 = firstRect.left + firstRect.width/2 - boardRect.left;
+                    const y1 = firstRect.top + firstRect.height/2 - boardRect.top;
+                    const x2 = lastRect.left + lastRect.width/2 - boardRect.left;
+                    const y2 = lastRect.top + lastRect.height/2 - boardRect.top;
+                    
+                    const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                    const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+                    
+                    line.style.width = `${length}px`;
+                    line.style.height = "8px";
+                    line.style.left = `${x1}px`;
+                    line.style.top = `${y1}px`;
+                    line.style.transform = `rotate(${angle}deg)`;
+                    line.style.background = currentPlayer === "red" ? 
+                        "linear-gradient(90deg, rgba(255,94,98,0.8), rgba(255,36,0,0.8))" :
+                        "linear-gradient(90deg, rgba(255,215,0,0.8), rgba(255,170,0,0.8))";
+                    line.style.boxShadow = currentPlayer === "red" ? 
+                        "0 0 15px rgba(255,94,98,0.8)" : 
+                        "0 0 15px rgba(255,215,0,0.8)";
+                    
+                    board.appendChild(line);
+                    return;
+                }
+            }
+        }
+
+        // Check for a draw
+        function checkDraw() {
+            return boardState.every(column => column.every(cell => cell !== null));
+        }
+
+        // Update the UI
+        function updateUI() {
+            // Update turn display
+            turnText.textContent = `${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)}'s Turn`;
+            turnIndicator.classList.remove("red", "yellow");
+            turnIndicator.classList.add(currentPlayer);
+        }
+
+        // Create confetti effect
+        function createConfetti(winner) {
+            const colors = winner === "red" ? 
+                ['#ff5e62', '#ff2400', '#ff8a00'] : 
+                ['#ffd700', '#ffaa00', '#ffff00'];
+            
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement("div");
+                confetti.classList.add("confetti");
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.left = `${Math.random() * 100}vw`;
+                confetti.style.top = "-10px";
+                confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                
+                document.body.appendChild(confetti);
+                
+                // Animate confetti
+                setTimeout(() => {
+                    confetti.style.opacity = "1";
+                    confetti.style.animation = `confettiFall ${Math.random() * 3 + 2}s linear forwards`;
+                    setTimeout(() => confetti.remove(), 5000);
+                }, 10);
+            }
+            
+            // Add CSS for animation
+            const style = document.createElement("style");
+            style.textContent = `
+                @keyframes confettiFall {
+                    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+                    100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Event listeners
+        restartBtn.addEventListener("click", initGame);
+        playAgainBtn.addEventListener("click", () => {
+            winModal.classList.remove("active");
+            initGame();
+        });
+        helpBtn.addEventListener("click", () => helpModal.classList.add("active"));
+        helpClose.addEventListener("click", () => helpModal.classList.remove("active"));
+        gotItBtn.addEventListener("click", () => helpModal.classList.remove("active"));
+        winClose.addEventListener("click", () => winModal.classList.remove("active"));
+
+        // Close modals when clicking outside
+        [winModal, helpModal].forEach(modal => {
+            modal.addEventListener("click", (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove("active");
+                }
+            });
+        });
+
+        // Initialize the game
+        initGame();
+    </script>
+</body>
+</html>

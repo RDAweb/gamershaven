@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Click the Circle Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --accent-color: #4cc9f0;
+      --text-color: #f8f9fa;
+      --bg-color: #121212;
+      --success-color: #4caf50;
+      --error-color: #f44336;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      touch-action: manipulation;
+      overflow-x: hidden;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      width: 100%;
+    }
+    
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, var(--accent-color), var(--primary-color));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    
+    .game-container {
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    canvas {
+      background: var(--bg-color);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      touch-action: none;
+    }
+    
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 500px;
+      margin-bottom: 15px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat {
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--accent-color);
+    }
+    
+    .stat-label {
+      font-size: 0.8rem;
+      opacity: 0.8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      max-width: 500px;
+    }
+    
+    button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: var(--primary-color);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 1rem;
+    }
+    
+    button:hover {
+      background: var(--secondary-color);
+      transform: translateY(-2px);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    
+    .modal.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    
+    .modal-content {
+      background: var(--bg-color);
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      max-width: 90%;
+      width: 400px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .modal h2 {
+      margin-bottom: 20px;
+      color: var(--accent-color);
+    }
+    
+    .modal p {
+      margin-bottom: 30px;
+      line-height: 1.6;
+    }
+    
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 10;
+    }
+    
+    @media (max-width: 500px) {
+      h1 {
+        font-size: 2rem;
+      }
+      
+      .stats {
+        padding: 10px;
+      }
+      
+      .stat-value {
+        font-size: 1.2rem;
+      }
+      
+      button {
+        padding: 10px;
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Click the Circle Pro</h1>
+    <p>Test your reflexes and precision!</p>
+  </header>
+  
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-value" id="scoreDisplay">0</div>
+      <div class="stat-label">Score</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="timeDisplay">2.0s</div>
+      <div class="stat-label">Time</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="highScoreDisplay">0</div>
+      <div class="stat-label">High Score</div>
+    </div>
+  </div>
+  
+  <div class="game-container">
+    <canvas id="circleGame"></canvas>
+  </div>
+  
+  <div class="controls">
+    <button id="helpBtn">How to Play</button>
+    <button id="restartBtn">Restart Game</button>
+  </div>
+  
+  <div class="modal" id="helpModal">
+    <div class="modal-content">
+      <h2>How to Play</h2>
+      <p>Tap or click on the blue circle as quickly as you can. Each successful hit increases your score and makes the game faster!</p>
+      <p>The circle will move to a new random position after each hit. If you don't click it in time, the game ends.</p>
+      <p>Try to beat your high score!</p>
+      <button id="closeHelpBtn">Got it!</button>
+    </div>
+  </div>
+  
+  <div class="modal" id="gameOverModal">
+    <div class="modal-content">
+      <h2>Time's Up!</h2>
+      <p id="finalScoreText">Your score: 0</p>
+      <p id="highScoreText">High score: 0</p>
+      <button id="playAgainBtn">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    // Game elements
+    const canvas = document.getElementById("circleGame");
+    const ctx = canvas.getContext("2d");
+    const scoreDisplay = document.getElementById("scoreDisplay");
+    const timeDisplay = document.getElementById("timeDisplay");
+    const highScoreDisplay = document.getElementById("highScoreDisplay");
+    const helpBtn = document.getElementById("helpBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const helpModal = document.getElementById("helpModal");
+    const gameOverModal = document.getElementById("gameOverModal");
+    const closeHelpBtn = document.getElementById("closeHelpBtn");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    const finalScoreText = document.getElementById("finalScoreText");
+    const highScoreText = document.getElementById("highScoreText");
+    
+    // Set canvas size
+    function resizeCanvas() {
+      const size = Math.min(window.innerWidth - 40, 500);
+      canvas.width = size;
+      canvas.height = size * 1.2;
+    }
+    
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
+    // Game state
+    let circle = {
+      x: 0,
+      y: 0,
+      radius: 0,
+      color: '#4361ee'
+    };
+    
+    let score = 0;
+    let highScore = localStorage.getItem('circleGameHighScore') || 0;
+    let timer = 2000; // ms
+    let timeout;
+    let isGameActive = true;
+    let animationFrame;
+    let circlePulse = 0;
+    let pulseDirection = 1;
+    
+    // Initialize game
+    function initGame() {
+      score = 0;
+      timer = 2000;
+      isGameActive = true;
+      updateDisplays();
+      calculateCircleSize();
+      newCircle();
+    }
+    
+    // Calculate circle size based on screen size
+    function calculateCircleSize() {
+      circle.radius = Math.max(20, canvas.width / 12);
+    }
+    
+    // Update displays
+    function updateDisplays() {
+      scoreDisplay.textContent = score;
+      timeDisplay.textContent = (timer / 1000).toFixed(1) + 's';
+      highScoreDisplay.textContent = highScore;
+    }
+    
+    // Draw circle with animation
+    function drawCircle(timestamp) {
+      if (!isGameActive) return;
+      
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw score
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${Math.max(16, canvas.width / 20)}px Roboto`;
+      ctx.textAlign = 'left';
+      ctx.fillText(`Score: ${score}`, 20, 30);
+      
+      // Draw pulsing circle
+      circlePulse += 0.02 * pulseDirection;
+      if (circlePulse > 0.2 || circlePulse < 0) {
+        pulseDirection *= -1;
+      }
+      
+      const pulseRadius = circle.radius * (1 + circlePulse);
+      
+      // Circle glow
+      const gradient = ctx.createRadialGradient(
+        circle.x, circle.y, 0,
+        circle.x, circle.y, pulseRadius * 1.5
+      );
+      gradient.addColorStop(0, 'rgba(67, 97, 238, 0.8)');
+      gradient.addColorStop(1, 'rgba(67, 97, 238, 0)');
+      
+      ctx.beginPath();
+      ctx.arc(circle.x, circle.y, pulseRadius * 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+      
+      // Main circle
+      ctx.beginPath();
+      ctx.arc(circle.x, circle.y, pulseRadius, 0, Math.PI * 2);
+      ctx.fillStyle = circle.color;
+      ctx.fill();
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = circle.color;
+      
+      animationFrame = requestAnimationFrame(drawCircle);
+    }
+    
+    // Create particles effect
+    function createParticles(x, y, color, count = 10) {
+      for (let i = 0; i < count; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        
+        const size = Math.random() * 10 + 5;
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * 30 + 20;
+        const duration = Math.random() * 1 + 0.5;
+        
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        particle.style.backgroundColor = color;
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        
+        document.body.appendChild(particle);
+        
+        const endX = x + Math.cos(angle) * distance;
+        const endY = y + Math.sin(angle) * distance;
+        
+        const animation = particle.animate([
+          { 
+            transform: 'translate(0, 0) scale(1)',
+            opacity: 1 
+          },
+          { 
+            transform: `translate(${endX - x}px, ${endY - y}px) scale(0)`,
+            opacity: 0 
+          }
+        ], {
+          duration: duration * 1000,
+          easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+        });
+        
+        animation.onfinish = () => {
+          particle.remove();
+        };
+      }
+    }
+    
+    // Generate new circle position
+    function newCircle() {
+      clearTimeout(timeout);
+      cancelAnimationFrame(animationFrame);
+      
+      circle.x = Math.random() * (canvas.width - circle.radius * 2) + circle.radius;
+      circle.y = Math.random() * (canvas.height - circle.radius * 2) + circle.radius;
+      
+      // Change color slightly for visual feedback
+      const hue = (parseInt(circle.color.slice(1), 16) + score * 1000);
+      circle.color = `hsl(${hue % 360}, 80%, 65%)`;
+      
+      drawCircle();
+      
+      if (isGameActive) {
+        timeout = setTimeout(() => {
+          gameOver();
+        }, timer);
+      }
+    }
+    
+    // Handle game over
+    function gameOver() {
+      isGameActive = false;
+      cancelAnimationFrame(animationFrame);
+      
+      // Update high score
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('circleGameHighScore', highScore);
+      }
+      
+      // Show game over modal
+      finalScoreText.textContent = `Your score: ${score}`;
+      highScoreText.textContent = `High score: ${highScore}`;
+      gameOverModal.classList.add('active');
+    }
+    
+    // Handle click/tap
+    function handleInteraction(x, y) {
+      if (!isGameActive) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      
+      const mouseX = (x - rect.left) * scaleX;
+      const mouseY = (y - rect.top) * scaleY;
+      
+      const dist = Math.hypot(mouseX - circle.x, mouseY - circle.y);
+      
+      if (dist < circle.radius) {
+        // Create particles at click position
+        createParticles(x, y, circle.color, 15);
+        
+        // Increase score and speed
+        score++;
+        timer = Math.max(400, timer - 100); // Speed up but don't go below 400ms
+        
+        // Visual feedback
+        canvas.style.transform = 'scale(0.98)';
+        setTimeout(() => {
+          canvas.style.transform = 'scale(1)';
+        }, 100);
+        
+        updateDisplays();
+        newCircle();
+      } else {
+        // Visual feedback for miss
+        canvas.style.transform = 'translateX(-5px)';
+        setTimeout(() => {
+          canvas.style.transform = 'translateX(5px)';
+          setTimeout(() => {
+            canvas.style.transform = 'translateX(0)';
+          }, 50);
+        }, 50);
+      }
+    }
+    
+    // Event listeners
+    canvas.addEventListener('click', (e) => {
+      handleInteraction(e.clientX, e.clientY);
+    });
+    
+    // Touch support for mobile
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      handleInteraction(touch.clientX, touch.clientY);
+    }, { passive: false });
+    
+    // Modal controls
+    helpBtn.addEventListener('click', () => {
+      helpModal.classList.add('active');
+    });
+    
+    closeHelpBtn.addEventListener('click', () => {
+      helpModal.classList.remove('active');
+    });
+    
+    playAgainBtn.addEventListener('click', () => {
+      gameOverModal.classList.remove('active');
+      initGame();
+    });
+    
+    restartBtn.addEventListener('click', initGame);
+    
+    // Close modals when clicking outside
+    [helpModal, gameOverModal].forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.remove('active');
+        }
+      });
+    });
+    
+    // Start the game
+    initGame();
+  </script>
+</body>
+</html>

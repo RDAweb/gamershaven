@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Knowledge Challenge</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap">
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --accent-color: #4cc9f0;
+      --correct-color: #4caf50;
+      --wrong-color: #f44336;
+      --text-color: #f8f9fa;
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --option-bg: #2d2d2d;
+      --option-hover: #3a3a3a;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    
+    .quiz-container {
+      width: 100%;
+      max-width: 600px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .quiz-header {
+      padding: 20px;
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      color: white;
+      text-align: center;
+    }
+    
+    .quiz-title {
+      font-size: 1.8rem;
+      margin-bottom: 5px;
+    }
+    
+    .quiz-progress {
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+    
+    .quiz-body {
+      padding: 25px;
+    }
+    
+    .question {
+      font-size: 1.3rem;
+      margin-bottom: 25px;
+      font-weight: 600;
+    }
+    
+    .options-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 25px;
+    }
+    
+    .option {
+      background: var(--option-bg);
+      padding: 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+      border: 2px solid transparent;
+    }
+    
+    .option:hover {
+      background: var(--option-hover);
+      transform: translateY(-2px);
+    }
+    
+    .option.selected {
+      border-color: var(--accent-color);
+    }
+    
+    .option.correct {
+      background: rgba(76, 175, 80, 0.2);
+      border-color: var(--correct-color);
+    }
+    
+    .option.wrong {
+      background: rgba(244, 67, 54, 0.2);
+      border-color: var(--wrong-color);
+    }
+    
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+    
+    button {
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .result-container {
+      text-align: center;
+      padding: 30px;
+    }
+    
+    .result-title {
+      font-size: 2rem;
+      margin-bottom: 15px;
+      color: var(--accent-color);
+    }
+    
+    .result-score {
+      font-size: 1.5rem;
+      margin-bottom: 25px;
+    }
+    
+    .timer {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .timer-circle {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: transparent;
+      border: 4px solid var(--primary-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+    
+    .timer-text {
+      font-weight: bold;
+    }
+    
+    .timer-svg {
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      width: 50px;
+      height: 50px;
+      transform: rotate(-90deg);
+    }
+    
+    .timer-circle circle {
+      fill: none;
+      stroke: var(--accent-color);
+      stroke-width: 4;
+      stroke-dasharray: 132;
+      stroke-dashoffset: 132;
+      transition: stroke-dashoffset 1s linear;
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <div class="quiz-header">
+      <h1 class="quiz-title">Knowledge Challenge</h1>
+      <div class="quiz-progress" id="progress">Question 1 of 10</div>
+    </div>
+    
+    <div class="quiz-body" id="quiz-body">
+      <div class="timer">
+        <div class="timer-circle">
+          <svg class="timer-svg">
+            <circle r="21" cx="25" cy="25"></circle>
+          </svg>
+          <div class="timer-text" id="timer">15</div>
+        </div>
+      </div>
+      
+      <div class="question" id="question"></div>
+      
+      <div class="options-container" id="options"></div>
+      
+      <div class="controls">
+        <button id="prev-btn" disabled>Previous</button>
+        <button id="next-btn">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Quiz data
+      const quizData = [
+        {
+          question: "What is the capital of France?",
+          options: ["Paris", "London", "Berlin", "Madrid"],
+          answer: 0,
+          explanation: "Paris has been the capital of France since the 5th century."
+        },
+        {
+          question: "Which planet is known as the Red Planet?",
+          options: ["Venus", "Mars", "Jupiter", "Saturn"],
+          answer: 1,
+          explanation: "Mars appears red due to iron oxide (rust) on its surface."
+        },
+        {
+          question: "What is 3 × 5?",
+          options: ["8", "15", "12", "10"],
+          answer: 1,
+          explanation: "3 multiplied by 5 equals 15."
+        },
+        {
+          question: "Who painted the Mona Lisa?",
+          options: ["Vincent van Gogh", "Pablo Picasso", "Leonardo da Vinci", "Michelangelo"],
+          answer: 2,
+          explanation: "Leonardo da Vinci painted the Mona Lisa in the early 16th century."
+        },
+        {
+          question: "What is the largest ocean on Earth?",
+          options: ["Atlantic Ocean", "Indian Ocean", "Arctic Ocean", "Pacific Ocean"],
+          answer: 3,
+          explanation: "The Pacific Ocean covers about 63 million square miles."
+        },
+        {
+          question: "Which element has the chemical symbol 'O'?",
+          options: ["Gold", "Oxygen", "Osmium", "Oganesson"],
+          answer: 1,
+          explanation: "Oxygen is essential for human respiration and has the symbol 'O'."
+        },
+        {
+          question: "In which year did World War II end?",
+          options: ["1943", "1945", "1947", "1950"],
+          answer: 1,
+          explanation: "World War II ended in 1945 with the surrender of Japan."
+        },
+        {
+          question: "What is the tallest mountain in the world?",
+          options: ["K2", "Mount Kilimanjaro", "Mount Everest", "Denali"],
+          answer: 2,
+          explanation: "Mount Everest's peak is 8,848 meters above sea level."
+        },
+        {
+          question: "Which country is home to the kangaroo?",
+          options: ["New Zealand", "South Africa", "Australia", "Brazil"],
+          answer: 2,
+          explanation: "Kangaroos are marsupials native to Australia."
+        },
+        {
+          question: "What is the square root of 64?",
+          options: ["6", "7", "8", "9"],
+          answer: 2,
+          explanation: "8 × 8 equals 64, so the square root is 8."
+        }
+      ];
+
+      // DOM elements
+      const quizContainer = document.querySelector('.quiz-container');
+      const questionElement = document.getElementById('question');
+      const optionsContainer = document.getElementById('options');
+      const progressElement = document.getElementById('progress');
+      const prevButton = document.getElementById('prev-btn');
+      const nextButton = document.getElementById('next-btn');
+      const timerElement = document.getElementById('timer');
+      const timerCircle = document.querySelector('.timer-circle circle');
+
+      // Quiz state
+      let currentQuestion = 0;
+      let score = 0;
+      let selectedOption = null;
+      let timer;
+      let timeLeft = 15;
+      const totalQuestions = quizData.length;
+
+      // Timer functions
+      function startTimer() {
+        clearInterval(timer);
+        timeLeft = 15;
+        updateTimerDisplay();
+        timer = setInterval(updateTimer, 1000);
+      }
+
+      function updateTimer() {
+        timeLeft--;
+        updateTimerDisplay();
+        
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          nextQuestion();
+        }
+      }
+
+      function updateTimerDisplay() {
+        timerElement.textContent = timeLeft;
+        const offset = 132 - (132 * timeLeft / 15);
+        timerCircle.style.strokeDashoffset = offset;
+      }
+
+      // Show current question
+      function showQuestion() {
+        const question = quizData[currentQuestion];
+        questionElement.textContent = question.question;
+        optionsContainer.innerHTML = '';
+        
+        question.options.forEach((option, index) => {
+          const optionElement = document.createElement('div');
+          optionElement.className = 'option';
+          optionElement.textContent = option;
+          
+          optionElement.addEventListener('click', function() {
+            document.querySelectorAll('.option').forEach(opt => {
+              opt.classList.remove('selected');
+            });
+            this.classList.add('selected');
+            selectedOption = index;
+          });
+          
+          optionsContainer.appendChild(optionElement);
+        });
+
+        progressElement.textContent = `Question ${currentQuestion + 1} of ${totalQuestions}`;
+        prevButton.disabled = currentQuestion === 0;
+        nextButton.textContent = currentQuestion === totalQuestions - 1 ? 'Finish' : 'Next';
+        
+        startTimer();
+      }
+
+      // Move to next question
+      function nextQuestion() {
+        clearInterval(timer);
+        
+        if (selectedOption === quizData[currentQuestion].answer) {
+          score++;
+        }
+        
+        if (currentQuestion < totalQuestions - 1) {
+          currentQuestion++;
+          selectedOption = null;
+          showQuestion();
+        } else {
+          finishQuiz();
+        }
+      }
+
+      // Move to previous question
+      function prevQuestion() {
+        clearInterval(timer);
+        if (currentQuestion > 0) {
+          currentQuestion--;
+          selectedOption = null;
+          showQuestion();
+        }
+      }
+
+      // Finish quiz
+      function finishQuiz() {
+        quizContainer.innerHTML = `
+          <div class="result-container">
+            <h2 class="result-title">Quiz Completed!</h2>
+            <div class="result-score">You scored ${score} out of ${totalQuestions}</div>
+            <button id="restart-btn">Restart Quiz</button>
+          </div>
+        `;
+        
+        document.getElementById('restart-btn').addEventListener('click', function() {
+          currentQuestion = 0;
+          score = 0;
+          selectedOption = null;
+          quizContainer.innerHTML = `
+            <div class="quiz-header">
+              <h1 class="quiz-title">Knowledge Challenge</h1>
+              <div class="quiz-progress" id="progress">Question 1 of 10</div>
+            </div>
+            <div class="quiz-body" id="quiz-body">
+              <div class="timer">
+                <div class="timer-circle">
+                  <svg class="timer-svg">
+                    <circle r="21" cx="25" cy="25"></circle>
+                  </svg>
+                  <div class="timer-text" id="timer">15</div>
+                </div>
+              </div>
+              <div class="question" id="question"></div>
+              <div class="options-container" id="options"></div>
+              <div class="controls">
+                <button id="prev-btn" disabled>Previous</button>
+                <button id="next-btn">Next</button>
+              </div>
+            </div>
+          `;
+          
+          // Reinitialize the quiz
+          document.addEventListener('DOMContentLoaded', function() {
+            showQuestion();
+          });
+        });
+      }
+
+      // Event listeners
+      prevButton.addEventListener('click', prevQuestion);
+      nextButton.addEventListener('click', nextQuestion);
+
+      // Start the quiz
+      showQuestion();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anagram Challenge</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Fredoka+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #6c5ce7;
+      --primary-dark: #5649c0;
+      --accent: #fd79a8;
+      --success: #00b894;
+      --error: #d63031;
+      --dark: #1e1e2f;
+      --darker: #161623;
+      --light: #f5f6fa;
+      --text: #dfe6e9;
+      --text-dark: #2d3436;
+      --border-radius: 12px;
+      --box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, var(--darker), var(--dark));
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .game-container {
+      background: rgba(46, 46, 79, 0.8);
+      backdrop-filter: blur(10px);
+      border-radius: var(--border-radius);
+      padding: 40px;
+      box-shadow: var(--box-shadow);
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .game-container::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(108, 92, 231, 0.1) 0%, transparent 70%);
+      z-index: -1;
+      animation: rotate 20s linear infinite;
+    }
+
+    @keyframes rotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    h1 {
+      font-family: 'Fredoka One', cursive;
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      color: var(--primary);
+      text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      border-radius: var(--border-radius);
+    }
+
+    .score-display {
+      display: flex;
+      gap: 20px;
+    }
+
+    .score-box {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px 20px;
+      border-radius: var(--border-radius);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .scrambled-container {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 20px;
+      border-radius: var(--border-radius);
+      margin-bottom: 30px;
+      position: relative;
+    }
+
+    .scrambled-word {
+      font-family: 'Fredoka One', cursive;
+      font-size: 2.5rem;
+      letter-spacing: 5px;
+      color: var(--accent);
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      margin: 10px 0;
+    }
+
+    .hint-text {
+      font-size: 0.9rem;
+      opacity: 0.7;
+      margin-top: 10px;
+    }
+
+    .input-group {
+      margin-bottom: 25px;
+      position: relative;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      max-width: 400px;
+      padding: 15px 20px;
+      font-size: 1.2rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--border-radius);
+      color: var(--text);
+      transition: var(--transition);
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.3);
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 12px 25px;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-secondary {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .btn-hint {
+      background-color: #0984e3;
+      color: white;
+    }
+
+    .btn-hint:hover {
+      background-color: #0767b3;
+      transform: translateY(-2px);
+    }
+
+    #result-message {
+      font-weight: 700;
+      font-size: 1.2rem;
+      margin: 20px 0;
+      min-height: 30px;
+      transition: var(--transition);
+    }
+
+    .correct {
+      color: var(--success);
+      animation: pop 0.5s;
+    }
+
+    .incorrect {
+      color: var(--error);
+      animation: shake 0.5s;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-5px); }
+      40%, 80% { transform: translateX(5px); }
+    }
+
+    .timer-container {
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .timer-bar {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 5px;
+      transition: width 0.1s linear;
+    }
+
+    .difficulty-selector {
+      margin-bottom: 20px;
+    }
+
+    .difficulty-btn {
+      padding: 8px 15px;
+      margin: 0 5px;
+      border: 2px solid var(--primary);
+      border-radius: var(--border-radius);
+      background-color: transparent;
+      color: var(--primary);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .difficulty-btn.active {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .difficulty-btn:hover {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .word-length {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 5px;
+    }
+
+    @media (max-width: 600px) {
+      .game-container {
+        padding: 25px;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .scrambled-word {
+        font-size: 1.8rem;
+      }
+
+      .buttons {
+        flex-direction: column;
+      }
+
+      button {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .score-display {
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="game-container">
+      <h1><i class="fas fa-random"></i> Anagram Challenge</h1>
+      
+      <div class="game-header">
+        <div class="score-display">
+          <div class="score-box">
+            <i class="fas fa-star"></i> Score: <span id="score">0</span>
+          </div>
+          <div class="score-box">
+            <i class="fas fa-trophy"></i> High Score: <span id="high-score">0</span>
+          </div>
+        </div>
+        <div class="score-box">
+          <i class="fas fa-clock"></i> Time: <span id="time">60</span>s
+        </div>
+      </div>
+
+      <div class="timer-container">
+        <div class="timer-bar" id="timer-bar"></div>
+      </div>
+
+      <div class="difficulty-selector">
+        <button class="difficulty-btn active" data-difficulty="easy">Easy</button>
+        <button class="difficulty-btn" data-difficulty="medium">Medium</button>
+        <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+      </div>
+
+      <div class="scrambled-container">
+        <p>Unscramble this word:</p>
+        <div class="scrambled-word" id="scrambled-word">Loading...</div>
+        <div class="word-length" id="word-length"></div>
+        <p class="hint-text" id="hint-text"></p>
+      </div>
+
+      <div class="input-group">
+        <input type="text" id="user-input" placeholder="Type your answer here..." autocomplete="off" autocapitalize="off">
+      </div>
+
+      <div class="buttons">
+        <button class="btn-primary" id="submit-btn">
+          <i class="fas fa-check"></i> Submit
+        </button>
+        <button class="btn-hint" id="hint-btn">
+          <i class="fas fa-lightbulb"></i> Hint
+        </button>
+        <button class="btn-secondary" id="skip-btn">
+          <i class="fas fa-forward"></i> Skip
+        </button>
+      </div>
+
+      <div id="result-message"></div>
+
+      <button class="btn-secondary" id="new-game-btn">
+        <i class="fas fa-redo"></i> New Game
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // DOM Elements
+    const scrambledWordEl = document.getElementById("scrambled-word");
+    const userInput = document.getElementById("user-input");
+    const resultMessage = document.getElementById("result-message");
+    const submitBtn = document.getElementById("submit-btn");
+    const hintBtn = document.getElementById("hint-btn");
+    const skipBtn = document.getElementById("skip-btn");
+    const newGameBtn = document.getElementById("new-game-btn");
+    const scoreEl = document.getElementById("score");
+    const highScoreEl = document.getElementById("high-score");
+    const timeEl = document.getElementById("time");
+    const timerBar = document.getElementById("timer-bar");
+    const hintTextEl = document.getElementById("hint-text");
+    const wordLengthEl = document.getElementById("word-length");
+    const difficultyBtns = document.querySelectorAll(".difficulty-btn");
+
+    // Game data
+    const wordLists = {
+      easy: [
+        "cat", "dog", "sun", "car", "book", "tree", "fish", "bird", "rain", "snow",
+        "cake", "ball", "door", "hand", "moon", "star", "foot", "eyes", "nose", "lamp"
+      ],
+      medium: [
+        "apple", "house", "table", "water", "music", "happy", "green", "beach", "light", "winter",
+        "summer", "orange", "garden", "pencil", "school", "friend", "mother", "father", "yellow", "purple"
+      ],
+      hard: [
+        "elephant", "computer", "mountain", "beautiful", "adventure", "chocolate", "restaurant", "education", 
+        "happiness", "important", "keyboard", "notebook", "sunshine", "calendar", "dinosaur", "universe",
+        "butterfly", "watermelon", "strawberry", "photograph"
+      ]
+    };
+
+    // Game state
+    let currentWord = "";
+    let scrambled = "";
+    let score = 0;
+    let highScore = 0;
+    let timeLeft = 60;
+    let timer;
+    let currentDifficulty = "easy";
+    let hintsUsed = 0;
+    let currentHint = "";
+
+    // Initialize game
+    function initGame() {
+      // Load high score from localStorage
+      highScore = localStorage.getItem("anagramHighScore") || 0;
+      highScoreEl.textContent = highScore;
+      
+      // Reset game state
+      score = 0;
+      scoreEl.textContent = score;
+      timeLeft = 60;
+      timeEl.textContent = timeLeft;
+      hintsUsed = 0;
+      
+      // Start timer
+      startTimer();
+      
+      // Load first word
+      loadNewWord();
+      
+      // Focus input
+      userInput.focus();
+    }
+
+    // Load a new word
+    function loadNewWord() {
+      const words = wordLists[currentDifficulty];
+      const randomIndex = Math.floor(Math.random() * words.length);
+      currentWord = words[randomIndex];
+      scrambled = shuffleWord(currentWord);
+      
+      // Ensure it's not the same as original
+      while (scrambled === currentWord) {
+        scrambled = shuffleWord(currentWord);
+      }
+      
+      // Update UI
+      scrambledWordEl.textContent = scrambled;
+      userInput.value = "";
+      resultMessage.textContent = "";
+      resultMessage.className = "";
+      
+      // Generate hint
+      generateHint();
+      
+      // Show word length
+      wordLengthEl.textContent = `${currentWord.length} letters`;
+    }
+
+    // Shuffle word
+    function shuffleWord(word) {
+      return word
+        .split('')
+        .sort(() => Math.random() - 0.5)
+        .join('');
+    }
+
+    // Generate hint
+    function generateHint() {
+      // Show first and last letters
+      const firstLetter = currentWord[0];
+      const lastLetter = currentWord[currentWord.length - 1];
+      currentHint = `Starts with '${firstLetter.toUpperCase()}' and ends with '${lastLetter.toUpperCase()}'`;
+      hintTextEl.textContent = "";
+    }
+
+    // Show hint
+    function showHint() {
+      if (hintTextEl.textContent === "") {
+        hintTextEl.textContent = currentHint;
+        hintsUsed++;
+        
+        // Deduct points for using hint
+        score = Math.max(0, score - 2);
+        scoreEl.textContent = score;
+      }
+    }
+
+    // Check answer
+    function checkAnswer() {
+      const userAnswer = userInput.value.trim().toLowerCase();
+      
+      if (userAnswer === "") {
+        resultMessage.textContent = "Please enter an answer!";
+        resultMessage.className = "incorrect";
+        return;
+      }
+      
+      if (userAnswer === currentWord) {
+        // Correct answer
+        resultMessage.textContent = "🎉 Correct! +" + currentWord.length + " points";
+        resultMessage.className = "correct";
+        
+        // Add to score (based on word length)
+        score += currentWord.length;
+        scoreEl.textContent = score;
+        
+        // Update high score if needed
+        if (score > highScore) {
+          highScore = score;
+          highScoreEl.textContent = highScore;
+          localStorage.setItem("anagramHighScore", highScore);
+        }
+        
+        // Load new word after delay
+        setTimeout(loadNewWord, 1500);
+      } else {
+        // Incorrect answer
+        resultMessage.textContent = "❌ Incorrect! Try again";
+        resultMessage.className = "incorrect";
+      }
+      
+      // Clear input and focus
+      userInput.value = "";
+      userInput.focus();
+    }
+
+    // Skip current word
+    function skipWord() {
+      // Deduct points for skipping
+      score = Math.max(0, score - 1);
+      scoreEl.textContent = score;
+      
+      resultMessage.textContent = `Skipped! The word was: ${currentWord}`;
+      resultMessage.className = "";
+      
+      // Load new word after delay
+      setTimeout(loadNewWord, 1500);
+    }
+
+    // Start timer
+    function startTimer() {
+      clearInterval(timer);
+      timer = setInterval(() => {
+        timeLeft--;
+        timeEl.textContent = timeLeft;
+        timerBar.style.width = `${(timeLeft / 60) * 100}%`;
+        
+        // Change color when time is running out
+        if (timeLeft <= 10) {
+          timerBar.style.background = "linear-gradient(90deg, var(--accent), var(--error))";
+        }
+        
+        // End game when time runs out
+        if (timeLeft <= 0) {
+          endGame();
+        }
+      }, 1000);
+    }
+
+    // End game
+    function endGame() {
+      clearInterval(timer);
+      
+      // Show game over message
+      resultMessage.textContent = `Game Over! Final Score: ${score}`;
+      resultMessage.className = "";
+      
+      // Disable input and buttons
+      userInput.disabled = true;
+      submitBtn.disabled = true;
+      hintBtn.disabled = true;
+      skipBtn.disabled = true;
+    }
+
+    // Event listeners
+    submitBtn.addEventListener("click", checkAnswer);
+    hintBtn.addEventListener("click", showHint);
+    skipBtn.addEventListener("click", skipWord);
+    newGameBtn.addEventListener("click", initGame);
+
+    // Handle Enter key
+    userInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        checkAnswer();
+      }
+    });
+
+    // Difficulty selection
+    difficultyBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        difficultyBtns.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentDifficulty = btn.dataset.difficulty;
+        initGame();
+      });
+    });
+
+    // Initialize game on load
+    window.addEventListener("load", initGame);
+  </script>
+</body>
+</html>

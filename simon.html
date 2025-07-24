@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simon Says</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap">
+  <style>
+    :root {
+      --red: #ff4d4d;
+      --green: #4dff4d;
+      --blue: #4d4dff;
+      --yellow: #ffff4d;
+      --dark: #111;
+      --light: #f8f9fa;
+      --primary: #4361ee;
+      --border-radius: 15px;
+      --box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--dark);
+      color: var(--light);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin: 20px 0;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 500px;
+      width: 100%;
+      margin: 20px auto;
+    }
+
+    .game-board {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1/1;
+      margin: 20px 0;
+    }
+
+    .btn {
+      position: absolute;
+      width: 48%;
+      height: 48%;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: var(--box-shadow);
+      opacity: 0.7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: rgba(255, 255, 255, 0.7);
+      user-select: none;
+    }
+
+    .btn:hover:not(.active) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    }
+
+    .red {
+      background: var(--red);
+      top: 0;
+      left: 0;
+    }
+
+    .green {
+      background: var(--green);
+      top: 0;
+      right: 0;
+    }
+
+    .blue {
+      background: var(--blue);
+      bottom: 0;
+      left: 0;
+    }
+
+    .yellow {
+      background: var(--yellow);
+      bottom: 0;
+      right: 0;
+    }
+
+    .active {
+      opacity: 1;
+      transform: scale(0.95);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 20px;
+      width: 100%;
+    }
+
+    #status {
+      font-size: 1.5rem;
+      margin: 20px 0;
+      min-height: 2.5rem;
+      text-align: center;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: var(--border-radius);
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.7);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    button {
+      padding: 12px 30px;
+      border: none;
+      border-radius: var(--border-radius);
+      background: var(--primary);
+      color: white;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: var(--box-shadow);
+      margin: 10px 0;
+      min-width: 200px;
+    }
+
+    button:hover {
+      background: #3a56d4;
+      transform: translateY(-2px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: var(--transition);
+    }
+
+    .modal.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-content {
+      background: rgba(30, 30, 30, 0.9);
+      padding: 30px;
+      border-radius: var(--border-radius);
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+      transform: translateY(-20px);
+      transition: var(--transition);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .modal.show .modal-content {
+      transform: translateY(0);
+    }
+
+    .modal h2 {
+      color: var(--primary);
+      margin-bottom: 15px;
+    }
+
+    .modal p {
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 500px) {
+      h1 {
+        font-size: 2rem;
+      }
+      
+      .btn {
+        font-size: 1.5rem;
+      }
+      
+      #status {
+        font-size: 1.2rem;
+      }
+    }
+
+    /* Animation for correct sequence */
+    @keyframes correct {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    /* Animation for wrong sequence */
+    @keyframes wrong {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-5px); }
+      40%, 80% { transform: translateX(5px); }
+    }
+
+    .wrong {
+      animation: wrong 0.5s ease;
+    }
+
+    .correct {
+      animation: correct 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+  <h1>Simon Says</h1>
+  
+  <div class="game-container">
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value" id="round">0</div>
+        <div class="stat-label">Round</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="high-score">0</div>
+        <div class="stat-label">High Score</div>
+      </div>
+    </div>
+    
+    <div class="game-board">
+      <div id="red" class="btn red">🔴</div>
+      <div id="green" class="btn green">🟢</div>
+      <div id="blue" class="btn blue">🔵</div>
+      <div id="yellow" class="btn yellow">🟡</div>
+    </div>
+    
+    <div id="status">Press Start to Play</div>
+    
+    <div class="controls">
+      <button id="start">Start Game</button>
+      <button id="strict">Strict Mode: OFF</button>
+    </div>
+  </div>
+  
+  <div class="modal" id="game-over-modal">
+    <div class="modal-content">
+      <h2>Game Over!</h2>
+      <p>You reached round <span id="final-round">0</span></p>
+      <button id="play-again">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    // Game elements
+    const buttons = ['red', 'green', 'blue', 'yellow'];
+    let sequence = [];
+    let userSequence = [];
+    let playing = false;
+    let strictMode = false;
+    let highScore = 0;
+    let currentRound = 0;
+
+    // DOM elements
+    const statusEl = document.getElementById('status');
+    const startBtn = document.getElementById('start');
+    const strictBtn = document.getElementById('strict');
+    const roundEl = document.getElementById('round');
+    const highScoreEl = document.getElementById('high-score');
+    const gameOverModal = document.getElementById('game-over-modal');
+    const playAgainBtn = document.getElementById('play-again');
+    const finalRoundEl = document.getElementById('final-round');
+
+    // Sound effects
+    const sounds = {
+      red: new Audio('https://www.soundjay.com/buttons/sounds/button-09.mp3'),
+      green: new Audio('https://www.soundjay.com/buttons/sounds/button-10.mp3'),
+      blue: new Audio('https://www.soundjay.com/buttons/sounds/button-11.mp3'),
+      yellow: new Audio('https://www.soundjay.com/buttons/sounds/button-21.mp3'),
+      wrong: new Audio('https://www.soundjay.com/buttons/sounds/button-10.mp3'),
+      correct: new Audio('https://www.soundjay.com/buttons/sounds/button-09.mp3')
+    };
+
+    // Initialize game
+    function initGame() {
+      sequence = [];
+      userSequence = [];
+      currentRound = 0;
+      updateRound();
+      statusEl.textContent = 'Press Start to Play';
+    }
+
+    // Play button sound
+    function playSound(color) {
+      if (sounds[color]) {
+        sounds[color].currentTime = 0;
+        sounds[color].play();
+      }
+    }
+
+    // Sleep function for delays
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Play the sequence
+    async function playSequence() {
+      playing = true;
+      statusEl.textContent = 'Watch carefully...';
+      
+      for (let color of sequence) {
+        const btn = document.getElementById(color);
+        btn.classList.add('active');
+        playSound(color);
+        await sleep(600);
+        btn.classList.remove('active');
+        await sleep(300);
+      }
+      
+      playing = false;
+      statusEl.textContent = 'Your turn!';
+    }
+
+    // Start next round
+    function nextRound() {
+      userSequence = [];
+      sequence.push(buttons[Math.floor(Math.random() * buttons.length)]);
+      currentRound++;
+      updateRound();
+      statusEl.textContent = `Round ${currentRound}`;
+      playSequence();
+    }
+
+    // Update round display
+    function updateRound() {
+      roundEl.textContent = currentRound;
+      if (currentRound > highScore) {
+        highScore = currentRound;
+        highScoreEl.textContent = highScore;
+      }
+    }
+
+    // Handle button click
+    async function handleButtonClick(color) {
+      if (playing) return;
+      
+      const btn = document.getElementById(color);
+      btn.classList.add('active');
+      playSound(color);
+      
+      setTimeout(() => {
+        btn.classList.remove('active');
+      }, 200);
+      
+      userSequence.push(color);
+      
+      // Check if user's sequence matches
+      for (let i = 0; i < userSequence.length; i++) {
+        if (userSequence[i] !== sequence[i]) {
+          // Wrong sequence
+          playSound('wrong');
+          document.querySelector('.game-board').classList.add('wrong');
+          setTimeout(() => {
+            document.querySelector('.game-board').classList.remove('wrong');
+          }, 500);
+          
+          if (strictMode) {
+            gameOver();
+          } else {
+            statusEl.textContent = 'Try again!';
+            setTimeout(() => playSequence(), 1000);
+          }
+          return;
+        }
+      }
+      
+      // Correct sequence so far
+      if (userSequence.length === sequence.length) {
+        // Completed the round
+        playSound('correct');
+        document.querySelector('.game-board').classList.add('correct');
+        setTimeout(() => {
+          document.querySelector('.game-board').classList.remove('correct');
+        }, 500);
+        
+        statusEl.textContent = 'Correct! Next round...';
+        setTimeout(nextRound, 1000);
+      }
+    }
+
+    // Game over
+    function gameOver() {
+      finalRoundEl.textContent = currentRound;
+      gameOverModal.classList.add('show');
+      statusEl.textContent = 'Game Over!';
+    }
+
+    // Event listeners for buttons
+    buttons.forEach(color => {
+      const btn = document.getElementById(color);
+      btn.addEventListener('click', () => handleButtonClick(color));
+    });
+
+    // Start button
+    startBtn.addEventListener('click', () => {
+      initGame();
+      nextRound();
+    });
+
+    // Strict mode toggle
+    strictBtn.addEventListener('click', () => {
+      strictMode = !strictMode;
+      strictBtn.textContent = `Strict Mode: ${strictMode ? 'ON' : 'OFF'}`;
+      strictBtn.style.background = strictMode ? '#f72585' : 'var(--primary)';
+    });
+
+    // Play again button
+    playAgainBtn.addEventListener('click', () => {
+      gameOverModal.classList.remove('show');
+      initGame();
+    });
+
+    // Initialize game on load
+    initGame();
+  </script>
+</body>
+</html>

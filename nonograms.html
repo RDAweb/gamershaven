@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pixel Puzzles: Nonograms</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6e00ff;
+      --secondary: #ff00aa;
+      --accent: #00f7ff;
+      --dark: #111;
+      --light: #fff;
+      --cell-size: clamp(30px, 6vw, 50px);
+      --clue-size: clamp(20px, 4vw, 30px);
+      --gap: 2px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63);
+      color: var(--light);
+      text-align: center;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    header {
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: clamp(1.8rem, 6vw, 2.5rem);
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .subtitle {
+      font-size: clamp(0.9rem, 3vw, 1.1rem);
+      opacity: 0.8;
+    }
+
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 20px auto;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    .puzzle-container {
+      display: flex;
+      flex-direction: column;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 10px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .clues-top {
+      display: flex;
+      margin-left: calc(var(--clue-size) + var(--gap));
+    }
+
+    .clues-left {
+      display: flex;
+      flex-direction: column;
+      margin-right: var(--gap);
+    }
+
+    .clue-cell {
+      width: var(--clue-size);
+      height: var(--clue-size);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8em;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .clue-cell.top {
+      width: var(--cell-size);
+      height: var(--clue-size);
+    }
+
+    .clue-cell.left {
+      width: var(--clue-size);
+      height: var(--cell-size);
+    }
+
+    .grid-row {
+      display: flex;
+    }
+
+    .grid-container {
+      display: flex;
+    }
+
+    .grid {
+      display: grid;
+      gap: var(--gap);
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      padding: 5px;
+    }
+
+    .cell {
+      width: var(--cell-size);
+      height: var(--cell-size);
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 3px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .cell:hover {
+      transform: scale(1.05);
+    }
+
+    .cell:active {
+      transform: scale(0.95);
+    }
+
+    .cell.filled {
+      background: var(--dark);
+      box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .cell.filled::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 60%;
+      height: 60%;
+      background: var(--primary);
+      border-radius: 2px;
+    }
+
+    .cell.marked {
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    .cell.marked::after {
+      content: '✕';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: rgba(0, 0, 0, 0.7);
+      font-size: 1.2em;
+    }
+
+    .cell.wrong {
+      background: rgba(255, 0, 0, 0.3);
+    }
+
+    .controls {
+      display: flex;
+      gap: 15px;
+      margin-top: 25px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      padding: 12px 25px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border: none;
+      color: var(--light);
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 600;
+      font-size: clamp(0.9rem, 3vw, 1.1rem);
+      cursor: pointer;
+      border-radius: 50px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(110, 0, 255, 0.3);
+      min-width: 120px;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(110, 0, 255, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 5px rgba(110, 0, 255, 0.3);
+    }
+
+    .mode-toggle {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: center;
+    }
+
+    .mode-btn {
+      padding: 8px 15px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--light);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9em;
+    }
+
+    .mode-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    #status {
+      font-size: clamp(1.1rem, 4vw, 1.5rem);
+      margin: 20px 0;
+      min-height: 2em;
+      color: var(--accent);
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .win-animation {
+      animation: pulse 0.5s ease infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.05); }
+    }
+
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background: var(--accent);
+      opacity: 0;
+      z-index: 100;
+      animation: confetti-fall 3s ease-in-out forwards;
+    }
+
+    @keyframes confetti-fall {
+      0% {
+        transform: translateY(-100vh) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    .level-selector {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .level-btn {
+      padding: 8px 15px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--light);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .level-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .level-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    @media (max-width: 600px) {
+      .controls {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🧩 Pixel Puzzles</h1>
+    <p class="subtitle">Solve the nonogram puzzles to reveal hidden images</p>
+  </header>
+
+  <div class="game-container">
+    <div class="level-selector" id="level-selector">
+      <!-- Levels will be added dynamically -->
+    </div>
+
+    <div class="mode-toggle">
+      <div class="mode-btn active" id="fill-btn">Fill</div>
+      <div class="mode-btn" id="mark-btn">Mark</div>
+    </div>
+
+    <div class="puzzle-container" id="puzzle-container">
+      <div class="clues-top" id="clues-top"></div>
+      <div class="grid-container">
+        <div class="clues-left" id="clues-left"></div>
+        <div class="grid" id="grid"></div>
+      </div>
+    </div>
+
+    <p id="status"></p>
+
+    <div class="controls">
+      <button id="reset-btn">Reset Puzzle</button>
+      <button id="hint-btn">Hint (3 left)</button>
+      <button id="new-btn">New Puzzle</button>
+    </div>
+  </div>
+
+  <script>
+    // Game Configuration
+    const puzzles = [
+      {
+        name: "Smiley",
+        size: 5,
+        solution: [
+          [0, 1, 1, 1, 0],
+          [1, 0, 0, 0, 1],
+          [1, 1, 1, 1, 1],
+          [1, 0, 0, 0, 1],
+          [0, 1, 1, 1, 0]
+        ]
+      },
+      {
+        name: "Heart",
+        size: 5,
+        solution: [
+          [0, 1, 0, 1, 0],
+          [1, 1, 1, 1, 1],
+          [1, 1, 1, 1, 1],
+          [0, 1, 1, 1, 0],
+          [0, 0, 1, 0, 0]
+        ]
+      },
+      {
+        name: "House",
+        size: 7,
+        solution: [
+          [0, 0, 1, 1, 1, 0, 0],
+          [0, 1, 1, 1, 1, 1, 0],
+          [1, 1, 1, 1, 1, 1, 1],
+          [1, 0, 1, 1, 1, 0, 1],
+          [1, 1, 1, 1, 1, 1, 1],
+          [1, 1, 1, 1, 1, 1, 1],
+          [1, 1, 1, 1, 1, 1, 1]
+        ]
+      },
+      {
+        name: "Tree",
+        size: 7,
+        solution: [
+          [0, 0, 1, 1, 1, 0, 0],
+          [0, 1, 1, 1, 1, 1, 0],
+          [1, 1, 1, 1, 1, 1, 1],
+          [0, 0, 1, 1, 1, 0, 0],
+          [0, 0, 1, 1, 1, 0, 0],
+          [0, 0, 1, 1, 1, 0, 0],
+          [0, 0, 1, 1, 1, 0, 0]
+        ]
+      },
+      {
+        name: "Diamond",
+        size: 9,
+        solution: [
+          [0, 0, 0, 0, 1, 0, 0, 0, 0],
+          [0, 0, 0, 1, 1, 1, 0, 0, 0],
+          [0, 0, 1, 1, 1, 1, 1, 0, 0],
+          [0, 1, 1, 1, 1, 1, 1, 1, 0],
+          [1, 1, 1, 1, 1, 1, 1, 1, 1],
+          [0, 1, 1, 1, 1, 1, 1, 1, 0],
+          [0, 0, 1, 1, 1, 1, 1, 0, 0],
+          [0, 0, 0, 1, 1, 1, 0, 0, 0],
+          [0, 0, 0, 0, 1, 0, 0, 0, 0]
+        ]
+      }
+    ];
+
+    // Game State
+    let state = {
+      currentPuzzle: 0,
+      grid: [],
+      userGrid: [],
+      mode: 'fill', // 'fill' or 'mark'
+      hintsLeft: 3,
+      gameActive: true
+    };
+
+    // DOM Elements
+    const gridElement = document.getElementById("grid");
+    const cluesTopElement = document.getElementById("clues-top");
+    const cluesLeftElement = document.getElementById("clues-left");
+    const statusElement = document.getElementById("status");
+    const resetBtn = document.getElementById("reset-btn");
+    const hintBtn = document.getElementById("hint-btn");
+    const newBtn = document.getElementById("new-btn");
+    const fillBtn = document.getElementById("fill-btn");
+    const markBtn = document.getElementById("mark-btn");
+    const levelSelector = document.getElementById("level-selector");
+
+    // Initialize the game
+    function initGame() {
+      createLevelSelector();
+      loadPuzzle(0);
+      setupEventListeners();
+    }
+
+    // Create level selector buttons
+    function createLevelSelector() {
+      levelSelector.innerHTML = "";
+      puzzles.forEach((puzzle, index) => {
+        const btn = document.createElement("div");
+        btn.className = "level-btn";
+        btn.textContent = puzzle.name;
+        btn.addEventListener("click", () => loadPuzzle(index));
+        levelSelector.appendChild(btn);
+      });
+    }
+
+    // Load a puzzle
+    function loadPuzzle(index) {
+      state.currentPuzzle = index;
+      state.grid = puzzles[index].solution;
+      state.userGrid = Array(puzzles[index].size).fill(null).map(() => Array(puzzles[index].size).fill(0));
+      state.gameActive = true;
+      state.hintsLeft = 3;
+      
+      drawClues();
+      drawGrid();
+      updateUI();
+      statusElement.textContent = "";
+      statusElement.classList.remove("win-animation");
+      
+      // Highlight current level button
+      document.querySelectorAll(".level-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.textContent === puzzles[index].name);
+      });
+    }
+
+    // Generate clues from the solution grid
+    function generateClues(grid) {
+      const rowClues = grid.map(row => {
+        let clues = [], count = 0;
+        row.forEach(cell => {
+          if (cell) count++;
+          else if (count) {
+            clues.push(count);
+            count = 0;
+          }
+        });
+        if (count) clues.push(count);
+        return clues.length ? clues : [0];
+      });
+
+      const colClues = [];
+      for (let col = 0; col < grid[0].length; col++) {
+        let clues = [], count = 0;
+        for (let row = 0; row < grid.length; row++) {
+          if (grid[row][col]) count++;
+          else if (count) {
+            clues.push(count);
+            count = 0;
+          }
+        }
+        if (count) clues.push(count);
+        colClues.push(clues.length ? clues : [0]);
+      }
+
+      return { rowClues, colClues };
+    }
+
+    // Draw the clue numbers
+    function drawClues() {
+      const { rowClues, colClues } = generateClues(state.grid);
+
+      cluesTopElement.innerHTML = "";
+      cluesLeftElement.innerHTML = "";
+
+      // Set grid template based on puzzle size
+      cluesTopElement.style.gridTemplateColumns = `repeat(${state.grid[0].length}, var(--cell-size))`;
+      cluesLeftElement.style.gridTemplateRows = `repeat(${state.grid.length}, var(--cell-size))`;
+
+      // Top clues (columns)
+      colClues.forEach(clue => {
+        const clueCell = document.createElement("div");
+        clueCell.className = "clue-cell top";
+        clueCell.textContent = clue.join(" ");
+        cluesTopElement.appendChild(clueCell);
+      });
+
+      // Left clues (rows)
+      rowClues.forEach(clue => {
+        const clueCell = document.createElement("div");
+        clueCell.className = "clue-cell left";
+        clueCell.textContent = clue.join(" ");
+        cluesLeftElement.appendChild(clueCell);
+      });
+    }
+
+    // Draw the playable grid
+    function drawGrid() {
+      gridElement.innerHTML = "";
+      gridElement.style.gridTemplateColumns = `repeat(${state.grid[0].length}, var(--cell-size))`;
+      gridElement.style.gridTemplateRows = `repeat(${state.grid.length}, var(--cell-size))`;
+
+      for (let row = 0; row < state.grid.length; row++) {
+        for (let col = 0; col < state.grid[0].length; col++) {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.dataset.row = row;
+          cell.dataset.col = col;
+          cell.addEventListener("click", () => handleCellClick(row, col));
+          gridElement.appendChild(cell);
+        }
+      }
+      updateGridVisual();
+    }
+
+    // Handle cell clicks
+    function handleCellClick(row, col) {
+      if (!state.gameActive) return;
+
+      if (state.mode === 'fill') {
+        // Cycle: empty -> filled -> marked -> empty
+        if (!state.userGrid[row][col]) {
+          state.userGrid[row][col] = 1; // filled
+        } else if (state.userGrid[row][col] === 1) {
+          state.userGrid[row][col] = 2; // marked
+        } else {
+          state.userGrid[row][col] = 0; // empty
+        }
+      } else {
+        // Mark mode: cycle between empty and marked
+        state.userGrid[row][col] = state.userGrid[row][col] === 2 ? 0 : 2;
+      }
+
+      updateGridVisual();
+      checkWin();
+    }
+
+    // Update the visual state of the grid
+    function updateGridVisual() {
+      const cells = document.querySelectorAll(".cell");
+      cells.forEach(cell => {
+        const row = parseInt(cell.dataset.row);
+        const col = parseInt(cell.dataset.col);
+        
+        cell.classList.remove("filled", "marked", "wrong");
+        
+        if (state.userGrid[row][col] === 1) {
+          cell.classList.add("filled");
+        } else if (state.userGrid[row][col] === 2) {
+          cell.classList.add("marked");
+        }
+      });
+    }
+
+    // Check if the puzzle is solved
+    function checkWin() {
+      for (let row = 0; row < state.grid.length; row++) {
+        for (let col = 0; col < state.grid[0].length; col++) {
+          // Only check filled cells (marked cells are ignored in solution check)
+          if (state.userGrid[row][col] === 1 && !state.grid[row][col]) {
+            return; // Wrong cell filled
+          }
+          if (state.grid[row][col] && state.userGrid[row][col] !== 1) {
+            return; // Solution cell not filled
+          }
+        }
+      }
+      
+      // All correct!
+      state.gameActive = false;
+      statusElement.textContent = "🎉 Puzzle Solved!";
+      statusElement.classList.add("win-animation");
+      createConfetti();
+    }
+
+    // Create confetti effect
+    function createConfetti() {
+      for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement("div");
+        confetti.className = "confetti";
+        confetti.style.left = `${Math.random() * 100}vw`;
+        confetti.style.width = `${Math.random() * 10 + 5}px`;
+        confetti.style.height = `${Math.random() * 10 + 5}px`;
+        confetti.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`;
+        confetti.style.animationDuration = `${Math.random() * 2 + 2}s`;
+        confetti.style.animationDelay = `${Math.random() * 0.5}s`;
+        document.body.appendChild(confetti);
+        
+        // Remove confetti after animation
+        setTimeout(() => {
+          confetti.remove();
+        }, 3000);
+      }
+    }
+
+    // Give a hint
+    function giveHint() {
+      if (state.hintsLeft <= 0 || !state.gameActive) return;
+      
+      // Find a random cell that should be filled but isn't
+      const emptySolutionCells = [];
+      for (let row = 0; row < state.grid.length; row++) {
+        for (let col = 0; col < state.grid[0].length; col++) {
+          if (state.grid[row][col] && state.userGrid[row][col] !== 1) {
+            emptySolutionCells.push({ row, col });
+          }
+        }
+      }
+      
+      if (emptySolutionCells.length > 0) {
+        const randomCell = emptySolutionCells[Math.floor(Math.random() * emptySolutionCells.length)];
+        const cell = document.querySelector(`.cell[data-row="${randomCell.row}"][data-col="${randomCell.col}"]`);
+        
+        // Flash the cell
+        cell.style.transform = "scale(1.1)";
+        cell.style.boxShadow = `0 0 20px ${getComputedStyle(document.documentElement).getPropertyValue('--accent')}`;
+        
+        setTimeout(() => {
+          cell.style.transform = "";
+          cell.style.boxShadow = "";
+        }, 1000);
+        
+        state.hintsLeft--;
+        updateUI();
+      }
+    }
+
+    // Reset the current puzzle
+    function resetPuzzle() {
+      state.userGrid = Array(state.grid.length).fill(null).map(() => Array(state.grid[0].length).fill(0));
+      updateGridVisual();
+      statusElement.textContent = "";
+      statusElement.classList.remove("win-animation");
+      state.gameActive = true;
+    }
+
+    // Toggle between fill and mark modes
+    function toggleMode(mode) {
+      state.mode = mode;
+      fillBtn.classList.toggle("active", mode === 'fill');
+      markBtn.classList.toggle("active", mode === 'mark');
+    }
+
+    // Update the UI
+    function updateUI() {
+      hintBtn.textContent = `Hint (${state.hintsLeft} left)`;
+      hintBtn.disabled = state.hintsLeft <= 0;
+    }
+
+    // Set up event listeners
+    function setupEventListeners() {
+      resetBtn.addEventListener("click", resetPuzzle);
+      newBtn.addEventListener("click", () => loadPuzzle(state.currentPuzzle));
+      hintBtn.addEventListener("click", giveHint);
+      fillBtn.addEventListener("click", () => toggleMode('fill'));
+      markBtn.addEventListener("click", () => toggleMode('mark'));
+    }
+
+    // Initialize the game when page loads
+    window.addEventListener("load", initGame);
+  </script>
+</body>
+</html>

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Stack Tower</title>
+  <style>
+    :root {
+      --primary: #4CAF50;
+      --primary-dark: #388E3C;
+      --accent: #FF5722;
+      --perfect: #FFD700;
+      --bg-dark: #111;
+      --bg-light: #222;
+      --text: #FFF;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      text-align: center;
+      touch-action: manipulation;
+      overflow: hidden;
+    }
+    
+    #game-container {
+      max-width: 350px;
+      height: 500px;
+      margin: 20px auto;
+      position: relative;
+      background: var(--bg-light);
+      overflow: hidden;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    
+    .block {
+      position: absolute;
+      height: 30px;
+      background: var(--primary);
+      transition: left 0.1s linear, width 0.2s ease-out;
+      will-change: left, width;
+    }
+    
+    .block.perfect {
+      background: var(--perfect);
+      box-shadow: 0 0 15px var(--perfect);
+    }
+    
+    .block.missed {
+      background: var(--accent);
+    }
+    
+    #score-display {
+      font-size: 24px;
+      margin: 10px 0;
+    }
+    
+    #controls {
+      margin-top: 20px;
+    }
+    
+    button {
+      padding: 12px 25px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 25px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    button:active {
+      background: var(--primary-dark);
+      transform: scale(0.95);
+    }
+    
+    #game-over {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    
+    #game-over.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+    
+    .combo {
+      position: absolute;
+      font-size: 28px;
+      font-weight: bold;
+      color: var(--perfect);
+      opacity: 0;
+      transition: all 0.5s;
+      text-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+    
+    .combo.show {
+      opacity: 1;
+      transform: translateY(-50px);
+    }
+    
+    @media (max-height: 700px) {
+      #game-container {
+        height: 400px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Stack Tower</h1>
+  <div id="score-display">Score: 0</div>
+  <div id="game-container"></div>
+  <div id="controls">
+    <button id="restart-btn">Restart</button>
+  </div>
+  
+  <div id="game-over">
+    <h2>Game Over!</h2>
+    <p id="final-score">Score: 0</p>
+    <button id="play-again">Play Again</button>
+  </div>
+  
+  <div class="combo" id="combo-display"></div>
+
+  <script>
+    // Game elements
+    const gameContainer = document.getElementById('game-container');
+    const scoreDisplay = document.getElementById('score-display');
+    const finalScoreDisplay = document.getElementById('final-score');
+    const gameOverScreen = document.getElementById('game-over');
+    const comboDisplay = document.getElementById('combo-display');
+    const restartBtn = document.getElementById('restart-btn');
+    const playAgainBtn = document.getElementById('play-again');
+    
+    // Game state
+    let blocks = [];
+    let currentX = 0;
+    let direction = 1;
+    let speed = 2;
+    let currentWidth = 100;
+    let score = 0;
+    let highScore = 0;
+    let perfectStreak = 0;
+    let gameRunning = true;
+    let gameWidth = gameContainer.offsetWidth;
+    
+    // Initialize game
+    function initGame() {
+      // Clear previous game
+      gameContainer.innerHTML = '';
+      blocks = [];
+      
+      // Reset game state
+      currentX = 0;
+      direction = 1;
+      speed = 2;
+      currentWidth = 100;
+      score = 0;
+      perfectStreak = 0;
+      gameRunning = true;
+      gameWidth = gameContainer.offsetWidth;
+      
+      // Update UI
+      scoreDisplay.textContent = `Score: ${score}`;
+      gameOverScreen.classList.remove('show');
+      
+      // Create base block
+      createBlock(true);
+      
+      // Create first moving block
+      createBlock();
+      
+      // Start game loop
+      gameLoop();
+    }
+    
+    // Create a new block
+    function createBlock(isBase = false) {
+      const block = document.createElement('div');
+      block.className = 'block';
+      
+      if (isBase) {
+        // Stationary base block
+        block.style.width = '100%';
+        block.style.left = '0';
+        block.style.bottom = '0';
+        block.style.background = '#333';
+      } else {
+        // Moving block
+        block.style.width = `${currentWidth}%`;
+        block.style.left = `${currentX}%`;
+        block.style.bottom = `${blocks.length * 30}px`;
+      }
+      
+      gameContainer.appendChild(block);
+      blocks.push({
+        element: block,
+        width: isBase ? 100 : currentWidth,
+        left: isBase ? 0 : currentX,
+        isBase
+      });
+    }
+    
+    // Place the current block
+    function placeBlock() {
+      if (!gameRunning || blocks.length < 2) return;
+      
+      const currentBlock = blocks[blocks.length - 1];
+      const prevBlock = blocks[blocks.length - 2];
+      
+      // Calculate overlap
+      const overlap = Math.min(
+        currentBlock.left + currentBlock.width,
+        prevBlock.left + prevBlock.width
+      ) - Math.max(
+        currentBlock.left,
+        prevBlock.left
+      );
+      
+      // Check if placement is valid
+      if (overlap <= 0) {
+        endGame();
+        return;
+      }
+      
+      // Calculate new width and position
+      const newWidth = (overlap / prevBlock.width) * 100;
+      const newLeft = Math.max(currentBlock.left, prevBlock.left);
+      
+      // Update current block
+      currentBlock.width = newWidth;
+      currentBlock.left = newLeft;
+      currentBlock.element.style.width = `${newWidth}%`;
+      currentBlock.element.style.left = `${newLeft}%`;
+      
+      // Check for perfect placement
+      const isPerfect = Math.abs(newWidth - prevBlock.width) < 0.5;
+      
+      if (isPerfect) {
+        perfectStreak++;
+        currentBlock.element.classList.add('perfect');
+        showCombo(perfectStreak);
+        
+        // Increase speed for perfect placements
+        speed = Math.min(speed + 0.2, 6);
+      } else {
+        perfectStreak = 0;
+        if (newWidth < prevBlock.width * 0.7) {
+          currentBlock.element.classList.add('missed');
+        }
+      }
+      
+      // Update game state
+      currentWidth = newWidth;
+      score++;
+      scoreDisplay.textContent = `Score: ${score}`;
+      
+      // Create new block
+      createBlock();
+    }
+    
+    // Game loop
+    function gameLoop() {
+      if (!gameRunning) return;
+      
+      const currentBlock = blocks[blocks.length - 1];
+      
+      if (!currentBlock.isBase) {
+        // Move current block
+        currentX += speed * direction;
+        
+        // Reverse direction at edges
+        if (currentX <= 0 || currentX + currentWidth >= 100) {
+          direction *= -1;
+        }
+        
+        // Update block position
+        currentBlock.left = currentX;
+        currentBlock.element.style.left = `${currentX}%`;
+      }
+      
+      requestAnimationFrame(gameLoop);
+    }
+    
+    // End game
+    function endGame() {
+      gameRunning = false;
+      
+      // Update high score
+      highScore = Math.max(score, highScore);
+      
+      // Show game over screen
+      finalScoreDisplay.textContent = `Score: ${score}`;
+      gameOverScreen.classList.add('show');
+      
+      // Add vibration effect
+      gameContainer.style.animation = 'shake 0.5s';
+      setTimeout(() => {
+        gameContainer.style.animation = '';
+      }, 500);
+    }
+    
+    // Show combo text
+    function showCombo(streak) {
+      if (streak < 2) return;
+      
+      comboDisplay.textContent = `PERFECT x${streak}`;
+      comboDisplay.classList.add('show');
+      
+      setTimeout(() => {
+        comboDisplay.classList.remove('show');
+      }, 1000);
+    }
+    
+    // Event listeners
+    gameContainer.addEventListener('click', placeBlock);
+    gameContainer.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      placeBlock();
+    });
+    
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        placeBlock();
+      }
+    });
+    
+    restartBtn.addEventListener('click', initGame);
+    playAgainBtn.addEventListener('click', initGame);
+    
+    // Start game
+    initGame();
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      gameWidth = gameContainer.offsetWidth;
+    });
+    
+    // Add shake animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+      }
+    `;
+    document.head.appendChild(style);
+  </script>
+</body>
+</html>

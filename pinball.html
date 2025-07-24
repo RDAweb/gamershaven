@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Neon Pinball</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --neon-blue: #00f3ff;
+      --neon-pink: #ff00ff;
+      --neon-green: #00ff9d;
+      --neon-yellow: #fff700;
+      --neon-purple: #bd00ff;
+      --bg-dark: #111;
+      --bg-darker: #050505;
+      --text: #fff;
+      --border-radius: 8px;
+      --box-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background: var(--bg-darker);
+      color: var(--text);
+      text-align: center;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+      touch-action: none;
+    }
+
+    header {
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.5);
+      border-bottom: 1px solid rgba(0, 243, 255, 0.2);
+    }
+
+    h1 {
+      font-family: 'Press Start 2P', cursive;
+      font-size: 1.5rem;
+      margin-bottom: 5px;
+      color: var(--neon-blue);
+      text-shadow: 0 0 10px var(--neon-blue);
+    }
+
+    .game-info {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 10px;
+    }
+
+    .score-display {
+      font-size: 1.2rem;
+      color: var(--neon-yellow);
+    }
+
+    .game-container {
+      position: relative;
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    #pinballCanvas {
+      background: linear-gradient(135deg, #111, #222);
+      border: 2px solid var(--neon-blue);
+      box-shadow: var(--box-shadow);
+      max-width: 100%;
+      max-height: 80vh;
+      aspect-ratio: 2/3;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.5);
+      border-top: 1px solid rgba(0, 243, 255, 0.2);
+    }
+
+    .flipper-btn {
+      width: 80px;
+      height: 40px;
+      background: rgba(0, 0, 0, 0.7);
+      border: 2px solid var(--neon-pink);
+      border-radius: var(--border-radius);
+      color: var(--neon-pink);
+      font-family: 'Orbitron', sans-serif;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 0 8px rgba(255, 0, 255, 0.3);
+    }
+
+    .flipper-btn:active {
+      background: var(--neon-pink);
+      color: var(--bg-dark);
+      box-shadow: 0 0 15px var(--neon-pink);
+    }
+
+    .mobile-controls {
+      display: none;
+    }
+
+    .launch-btn {
+      width: 120px;
+      height: 50px;
+      background: rgba(0, 0, 0, 0.7);
+      border: 2px solid var(--neon-green);
+      border-radius: var(--border-radius);
+      color: var(--neon-green);
+      font-family: 'Orbitron', sans-serif;
+      font-weight: bold;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 0 8px rgba(0, 255, 157, 0.3);
+      margin-top: 10px;
+    }
+
+    .launch-btn:active {
+      background: var(--neon-green);
+      color: var(--bg-dark);
+      box-shadow: 0 0 15px var(--neon-green);
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 1.2rem;
+      }
+
+      .desktop-controls {
+        display: none;
+      }
+
+      .mobile-controls {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 10px;
+      }
+
+      .flipper-row {
+        display: flex;
+        justify-content: center;
+        gap: 40px;
+        margin-bottom: 10px;
+      }
+
+      #pinballCanvas {
+        max-height: 60vh;
+      }
+    }
+
+    /* Animations */
+    @keyframes neon-glow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    @keyframes ball-bounce {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>NEON PINBALL</h1>
+    <div class="game-info">
+      <div class="score-display">SCORE: <span id="score">0</span></div>
+      <div class="score-display">BALLS: <span id="balls">3</span></div>
+    </div>
+  </header>
+
+  <div class="game-container">
+    <canvas id="pinballCanvas"></canvas>
+  </div>
+
+  <div class="desktop-controls">
+    <p>Use A/D keys for flippers | SPACE to launch</p>
+  </div>
+
+  <div class="mobile-controls">
+    <div class="flipper-row">
+      <button class="flipper-btn" id="left-flipper-btn">LEFT FLIPPER</button>
+      <button class="flipper-btn" id="right-flipper-btn">RIGHT FLIPPER</button>
+    </div>
+    <button class="launch-btn" id="launch-btn">LAUNCH BALL</button>
+  </div>
+
+  <script>
+    // Game Canvas Setup
+    const canvas = document.getElementById("pinballCanvas");
+    const ctx = canvas.getContext("2d");
+    const scoreDisplay = document.getElementById("score");
+    const ballsDisplay = document.getElementById("balls");
+    const leftFlipperBtn = document.getElementById("left-flipper-btn");
+    const rightFlipperBtn = document.getElementById("right-flipper-btn");
+    const launchBtn = document.getElementById("launch-btn");
+
+    // Game State
+    let score = 0;
+    let balls = 3;
+    let gameActive = false;
+    let isBallLaunched = false;
+
+    // Game Objects
+    let ball, flipperLeft, flipperRight, bumpers, walls, slingshots;
+
+    function initGameObjects() {
+      // Ball Properties
+      ball = {
+        x: canvas.width / 2,
+        y: canvas.height - 50,
+        radius: 10,
+        dx: 0,
+        dy: 0,
+        speed: 8,
+        color: '#fff700'
+      };
+
+      // Flippers
+      flipperLeft = {
+        x: canvas.width * 0.25,
+        y: canvas.height - 50,
+        width: 80,
+        height: 15,
+        angle: 0,
+        maxAngle: -Math.PI/3,
+        restAngle: 0,
+        speed: 0.15,
+        color: '#ff00ff'
+      };
+
+      flipperRight = {
+        x: canvas.width * 0.75,
+        y: canvas.height - 50,
+        width: 80,
+        height: 15,
+        angle: 0,
+        maxAngle: Math.PI/3,
+        restAngle: 0,
+        speed: 0.15,
+        color: '#00f3ff'
+      };
+
+      // Bumpers
+      bumpers = [
+        { x: canvas.width * 0.3, y: canvas.height * 0.4, radius: 25, color: '#00ff9d', score: 100 },
+        { x: canvas.width * 0.7, y: canvas.height * 0.4, radius: 25, color: '#00ff9d', score: 100 },
+        { x: canvas.width * 0.5, y: canvas.height * 0.3, radius: 30, color: '#bd00ff', score: 200 }
+      ];
+
+      // Walls
+      walls = [
+        // Top wall
+        { x1: 0, y1: 0, x2: canvas.width, y2: 0 },
+        // Left wall
+        { x1: 0, y1: 0, x2: 0, y2: canvas.height },
+        // Right wall
+        { x1: canvas.width, y1: 0, x2: canvas.width, y2: canvas.height },
+        // Left diagonal
+        { x1: 0, y1: canvas.height * 0.4, x2: canvas.width * 0.2, y2: canvas.height * 0.2 },
+        // Right diagonal
+        { x1: canvas.width, y1: canvas.height * 0.4, x2: canvas.width * 0.8, y2: canvas.height * 0.2 },
+        // Bottom wall
+        { x1: 0, y1: canvas.height, x2: canvas.width, y2: canvas.height }
+      ];
+
+      // Slingshots
+      slingshots = [
+        { x: canvas.width * 0.1, y: canvas.height - 100, radius: 20, color: '#ff5555' },
+        { x: canvas.width * 0.9, y: canvas.height - 100, radius: 20, color: '#ff5555' }
+      ];
+    }
+
+    // Adjust canvas size
+    function resizeCanvas() {
+      const maxWidth = window.innerWidth * 0.95;
+      const maxHeight = window.innerHeight * 0.7;
+      const aspectRatio = 2/3;
+      
+      let width = maxWidth;
+      let height = width * aspectRatio;
+      
+      if (height > maxHeight) {
+        height = maxHeight;
+        width = height / aspectRatio;
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      
+      // Reinitialize game objects with new dimensions
+      initGameObjects();
+    }
+
+    // Event Listeners
+    function setupEventListeners() {
+      window.addEventListener('resize', resizeCanvas);
+
+      // Keyboard controls
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "a" || e.key === "ArrowLeft") flipperLeft.angle = flipperLeft.maxAngle;
+        if (e.key === "d" || e.key === "ArrowRight") flipperRight.angle = flipperRight.maxAngle;
+        if ((e.key === " " || e.key === "w" || e.key === "ArrowUp") && !isBallLaunched) {
+          launchBall();
+        }
+      });
+
+      document.addEventListener("keyup", (e) => {
+        if (e.key === "a" || e.key === "ArrowLeft") flipperLeft.angle = flipperLeft.restAngle;
+        if (e.key === "d" || e.key === "ArrowRight") flipperRight.angle = flipperRight.restAngle;
+      });
+
+      // Mobile controls
+      leftFlipperBtn.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        flipperLeft.angle = flipperLeft.maxAngle;
+      });
+
+      leftFlipperBtn.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        flipperLeft.angle = flipperLeft.restAngle;
+      });
+
+      rightFlipperBtn.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        flipperRight.angle = flipperRight.maxAngle;
+      });
+
+      rightFlipperBtn.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        flipperRight.angle = flipperRight.restAngle;
+      });
+
+      launchBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (!isBallLaunched) {
+          launchBall();
+        }
+      });
+    }
+
+    // Launch the ball
+    function launchBall() {
+      if (isBallLaunched) return;
+      
+      isBallLaunched = true;
+      ball.dx = (Math.random() - 0.5) * 1.5;
+      ball.dy = -ball.speed;
+    }
+
+    // Draw game objects
+    function drawBall() {
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      ctx.fillStyle = ball.color;
+      ctx.fill();
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = ball.color;
+      ctx.closePath();
+      ctx.shadowBlur = 0;
+    }
+
+    function drawFlipper(flipper) {
+      ctx.save();
+      ctx.translate(flipper.x, flipper.y);
+      ctx.rotate(flipper.angle);
+      
+      ctx.beginPath();
+      ctx.roundRect(0, -flipper.height/2, flipper.width, flipper.height, [5]);
+      ctx.fillStyle = flipper.color;
+      ctx.fill();
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = flipper.color;
+      ctx.closePath();
+      ctx.shadowBlur = 0;
+      
+      ctx.restore();
+    }
+
+    function drawBumper(bumper) {
+      ctx.beginPath();
+      ctx.arc(bumper.x, bumper.y, bumper.radius, 0, Math.PI * 2);
+      ctx.fillStyle = bumper.color;
+      ctx.fill();
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = bumper.color;
+      ctx.closePath();
+      ctx.shadowBlur = 0;
+      
+      // Inner circle
+      ctx.beginPath();
+      ctx.arc(bumper.x, bumper.y, bumper.radius * 0.6, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function drawWall(wall) {
+      ctx.beginPath();
+      ctx.moveTo(wall.x1, wall.y1);
+      ctx.lineTo(wall.x2, wall.y2);
+      ctx.strokeStyle = '#00f3ff';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.shadowBlur = 5;
+      ctx.shadowColor = '#00f3ff';
+      ctx.closePath();
+      ctx.shadowBlur = 0;
+    }
+
+    function drawSlingshot(slingshot) {
+      ctx.beginPath();
+      ctx.arc(slingshot.x, slingshot.y, slingshot.radius, 0, Math.PI * 2);
+      ctx.fillStyle = slingshot.color;
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    // Collision detection
+    function checkFlipperCollision(flipper) {
+      const cos = Math.cos(-flipper.angle);
+      const sin = Math.sin(-flipper.angle);
+      const ballX = ball.x - flipper.x;
+      const ballY = ball.y - flipper.y;
+      const rotatedX = ballX * cos - ballY * sin;
+      const rotatedY = ballX * sin + ballY * cos;
+      
+      if (rotatedX > 0 && rotatedX < flipper.width && 
+          Math.abs(rotatedY) < flipper.height/2 + ball.radius) {
+        const angle = flipper.angle;
+        const power = 8;
+        ball.dx = Math.sin(angle) * power;
+        ball.dy = -Math.cos(angle) * power;
+        ball.dx += (Math.random() - 0.5) * 2;
+        addScore(50);
+        ball.x = flipper.x + Math.cos(flipper.angle) * (flipper.width + ball.radius);
+        ball.y = flipper.y + Math.sin(flipper.angle) * (flipper.width + ball.radius);
+      }
+    }
+
+    function checkBumperCollision(bumper) {
+      const dx = ball.x - bumper.x;
+      const dy = ball.y - bumper.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (distance < ball.radius + bumper.radius) {
+        const angle = Math.atan2(dy, dx);
+        const power = 6;
+        ball.dx = Math.cos(angle) * power;
+        ball.dy = Math.sin(angle) * power;
+        addScore(bumper.score);
+        bumper.radius += 5;
+        setTimeout(() => {
+          bumper.radius -= 5;
+        }, 100);
+        const overlap = ball.radius + bumper.radius - distance;
+        ball.x += (dx / distance) * overlap * 1.1;
+        ball.y += (dy / distance) * overlap * 1.1;
+      }
+    }
+
+    function checkWallCollision(wall) {
+      const x1 = wall.x1;
+      const y1 = wall.y1;
+      const x2 = wall.x2;
+      const y2 = wall.y2;
+      
+      const length = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+      const dot = ((ball.x - x1) * (x2 - x1) + (ball.y - y1) * (y2 - y1)) / (length * length);
+      
+      const closestX = x1 + dot * (x2 - x1);
+      const closestY = y1 + dot * (y2 - y1);
+      
+      if (!(closestX >= Math.min(x1, x2) && closestX <= Math.max(x1, x2) &&
+            closestY >= Math.min(y1, y2) && closestY <= Math.max(y1, y2))) {
+        return;
+      }
+      
+      const distance = Math.sqrt((ball.x - closestX) * (ball.x - closestX) + 
+                      (ball.y - closestY) * (ball.y - closestY));
+      
+      if (distance < ball.radius) {
+        const nx = -(y2 - y1) / length;
+        const ny = (x2 - x1) / length;
+        const dotProduct = ball.dx * nx + ball.dy * ny;
+        ball.dx -= 2 * dotProduct * nx;
+        ball.dy -= 2 * dotProduct * ny;
+        ball.dx *= 0.98;
+        ball.dy *= 0.98;
+        addScore(10);
+        const overlap = ball.radius - distance;
+        ball.x += nx * overlap * 1.1;
+        ball.y += ny * overlap * 1.1;
+      }
+    }
+
+    function checkSlingshotCollision(slingshot) {
+      const dx = ball.x - slingshot.x;
+      const dy = ball.y - slingshot.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (distance < ball.radius + slingshot.radius) {
+        const angle = Math.atan2(dy, dx);
+        const power = 7;
+        ball.dx = Math.cos(angle) * power;
+        ball.dy = Math.sin(angle) * power;
+        addScore(75);
+        slingshot.radius += 3;
+        setTimeout(() => {
+          slingshot.radius -= 3;
+        }, 100);
+        const overlap = ball.radius + slingshot.radius - distance;
+        ball.x += (dx / distance) * overlap * 1.1;
+        ball.y += (dy / distance) * overlap * 1.1;
+      }
+    }
+
+    // Game functions
+    function addScore(points) {
+      score += points;
+      scoreDisplay.textContent = score;
+    }
+
+    function resetBall() {
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height - 50;
+      ball.dx = 0;
+      ball.dy = 0;
+      isBallLaunched = false;
+      
+      if (gameActive) {
+        balls--;
+        ballsDisplay.textContent = balls;
+        
+        if (balls <= 0) {
+          gameActive = false;
+          setTimeout(() => {
+            alert(`Game Over! Final Score: ${score}`);
+            resetGame();
+          }, 500);
+        }
+      }
+    }
+
+    function resetGame() {
+      score = 0;
+      balls = 3;
+      scoreDisplay.textContent = score;
+      ballsDisplay.textContent = balls;
+      resetBall();
+      gameActive = true;
+    }
+
+    function updateBall() {
+      ball.dy += 0.2;
+      ball.x += ball.dx;
+      ball.y += ball.dy;
+      
+      checkFlipperCollision(flipperLeft);
+      checkFlipperCollision(flipperRight);
+      bumpers.forEach(bumper => checkBumperCollision(bumper));
+      walls.forEach(wall => checkWallCollision(wall));
+      slingshots.forEach(slingshot => checkSlingshotCollision(slingshot));
+      
+      if (ball.y > canvas.height + ball.radius * 2) {
+        resetBall();
+      }
+      
+      if (ball.x < ball.radius) {
+        ball.x = ball.radius;
+        ball.dx = -ball.dx * 0.8;
+      }
+      if (ball.x > canvas.width - ball.radius) {
+        ball.x = canvas.width - ball.radius;
+        ball.dx = -ball.dx * 0.8;
+      }
+      
+      if (ball.y < ball.radius) {
+        ball.y = ball.radius;
+        ball.dy = -ball.dy * 0.8;
+      }
+    }
+
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      walls.forEach(wall => drawWall(wall));
+      bumpers.forEach(bumper => drawBumper(bumper));
+      slingshots.forEach(slingshot => drawSlingshot(slingshot));
+      drawFlipper(flipperLeft);
+      drawFlipper(flipperRight);
+      drawBall();
+      
+      if (gameActive) {
+        updateBall();
+      }
+      
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Initialize game when page loads
+    window.addEventListener('load', function() {
+      resizeCanvas();
+      setupEventListeners();
+      resetGame();
+      gameLoop();
+    });
+  </script>
+</body>
+</html>

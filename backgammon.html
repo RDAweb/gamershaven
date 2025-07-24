@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Neon Backgammon</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: #00ff9d;
+      --secondary-color: #00b8ff;
+      --accent-color: #ff2d75;
+      --background-dark: #0f0f1a;
+      --background-light: #1a1a2e;
+      --text-color: #ffffff;
+      --text-secondary: rgba(255, 255, 255, 0.7);
+      --board-color: #b97a57;
+      --point-color: #d9b382;
+      --white-piece: linear-gradient(135deg, #ffffff, #e0e0e0);
+      --black-piece: linear-gradient(135deg, #333333, #000000);
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      --glow: 0 0 15px rgba(0, 255, 157, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--background-dark);
+      color: var(--text-color);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+      overflow-x: hidden;
+    }
+
+    .background-pattern {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 30%, rgba(0, 255, 157, 0.05) 0%, transparent 20%),
+        radial-gradient(circle at 80% 70%, rgba(0, 184, 255, 0.05) 0%, transparent 20%),
+        linear-gradient(to bottom, var(--background-dark), var(--background-light));
+      z-index: -1;
+    }
+
+    .game-container {
+      width: 100%;
+      max-width: 800px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 15px;
+      background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      font-weight: 700;
+    }
+
+    .game-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      background: rgba(26, 26, 46, 0.8);
+      padding: 15px;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+
+    .player-turn {
+      font-size: 1.2rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .turn-indicator {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 10px currentColor;
+    }
+
+    .turn-indicator.white {
+      background: var(--white-piece);
+      color: #ffffff;
+    }
+
+    .turn-indicator.black {
+      background: var(--black-piece);
+      color: #000000;
+    }
+
+    #board {
+      width: 100%;
+      max-width: 800px;
+      height: 400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      background: var(--board-color);
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .point {
+      background: var(--point-color);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      position: relative;
+      padding: 5px;
+      transition: var(--transition);
+      border-right: 1px solid rgba(0, 0, 0, 0.2);
+    }
+
+    .point:last-child {
+      border-right: none;
+    }
+
+    .point.top {
+      flex-direction: column-reverse;
+    }
+
+    .point.highlight {
+      background: rgba(255, 255, 255, 0.3);
+      box-shadow: inset 0 0 15px rgba(255, 215, 0, 0.5);
+    }
+
+    .checker {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      margin: 2px;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+      z-index: 2;
+    }
+
+    .checker::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%);
+      opacity: 0;
+      transition: var(--transition);
+    }
+
+    .checker:hover::before {
+      opacity: 1;
+    }
+
+    .checker.selected {
+      transform: scale(1.1);
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+      z-index: 3;
+    }
+
+    .white {
+      background: var(--white-piece);
+      border: 1px solid rgba(0, 0, 0, 0.2);
+    }
+
+    .black {
+      background: var(--black-piece);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .bar {
+      position: absolute;
+      width: 30px;
+      height: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1;
+    }
+
+    .game-controls {
+      margin-top: 25px;
+      display: flex;
+      gap: 15px;
+      width: 100%;
+      max-width: 800px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 15px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+      opacity: 0;
+      transition: var(--transition);
+    }
+
+    .btn:hover::before {
+      opacity: 1;
+    }
+
+    .btn-roll {
+      background: linear-gradient(135deg, var(--accent-color), #ff5e8a);
+      color: white;
+      box-shadow: 0 5px 15px rgba(255, 45, 117, 0.3);
+    }
+
+    .btn-help {
+      background: rgba(26, 26, 46, 0.8);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+
+    .btn:hover {
+      transform: translateY(-3px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .dice-container {
+      display: flex;
+      gap: 15px;
+      margin-top: 15px;
+      justify-content: center;
+      color: black;
+    }
+
+    .die {
+      width: 50px;
+      height: 50px;
+      background: white;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: bold;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      transition: var(--transition);
+    }
+
+    .die.active {
+      transform: scale(1.1);
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+    }
+
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 15, 26, 0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: var(--transition);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+
+    .modal.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-content {
+      background: var(--background-light);
+      padding: 30px;
+      border-radius: 20px;
+      max-width: 450px;
+      width: 90%;
+      text-align: center;
+      transform: translateY(-50px);
+      transition: var(--transition);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
+
+    .modal-content::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 5px;
+      background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    }
+
+    .modal.active .modal-content {
+      transform: translateY(0);
+    }
+
+    .modal h2 {
+      color: var(--primary-color);
+      margin-bottom: 20px;
+      font-size: 1.8rem;
+    }
+
+    .modal p {
+      margin-bottom: 15px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+    }
+
+    .modal .highlight {
+      color: var(--text-color);
+      font-weight: 600;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .modal-close:hover {
+      color: var(--accent-color);
+    }
+
+    .win-modal .modal-content {
+      max-width: 350px;
+    }
+
+    .win-modal h2 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    .win-modal p {
+      font-size: 1.2rem;
+      margin-bottom: 25px;
+    }
+
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: var(--primary-color);
+      opacity: 0;
+      z-index: 99;
+    }
+
+    @media (max-width: 800px) {
+      #board {
+        height: 300px;
+      }
+
+      .checker {
+        width: 25px;
+        height: 25px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 2rem;
+      }
+
+      #board {
+        height: 250px;
+      }
+
+      .checker {
+        width: 20px;
+        height: 20px;
+        margin: 1px;
+      }
+
+      .game-header {
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px 10px;
+      }
+
+      .player-turn {
+        font-size: 1rem;
+      }
+
+      .game-controls {
+        flex-direction: column;
+      }
+
+      .die {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+      }
+    }
+
+    /* Tutorial styles */
+    .tutorial-steps {
+      text-align: left;
+      margin-bottom: 20px;
+    }
+
+    .tutorial-step {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+
+    .tutorial-step i {
+      color: var(--primary-color);
+      margin-right: 10px;
+      font-size: 1.2rem;
+      margin-top: 3px;
+    }
+
+    .tutorial-step-content {
+      flex: 1;
+    }
+
+    .tutorial-step h3 {
+      color: var(--text-color);
+      font-size: 1.1rem;
+      margin-bottom: 5px;
+    }
+
+    .tutorial-step p {
+      margin-bottom: 0;
+      font-size: 0.95rem;
+    }
+
+    /* Animation for dice roll */
+    @keyframes diceRoll {
+      0% { transform: rotate(0deg) scale(1); }
+      25% { transform: rotate(90deg) scale(1.2); }
+      50% { transform: rotate(180deg) scale(1); }
+      75% { transform: rotate(270deg) scale(1.2); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+
+    .rolling {
+      animation: diceRoll 0.5s ease-out;
+    }
+  </style>
+</head>
+<body>
+  <div class="background-pattern"></div>
+  
+  <div class="game-container">
+    <h1>NEON BACKGAMMON</h1>
+    
+    <div class="game-header">
+      <div class="player-turn" id="turn-display">
+        <span class="turn-indicator white"></span>
+        <span id="turn-text">White's Turn</span>
+      </div>
+    </div>
+    
+    <div id="board">
+      <!-- Points will be generated by JavaScript -->
+      <div class="bar" id="bar"></div>
+    </div>
+    
+    <div class="dice-container">
+      <div class="die" id="die1">-</div>
+      <div class="die" id="die2">-</div>
+    </div>
+    
+    <div class="game-controls">
+      <button class="btn btn-roll" id="roll-btn">
+        <i class="fas fa-dice"></i> Roll Dice
+      </button>
+      <button class="btn btn-help" id="help-btn">
+        <i class="fas fa-question-circle"></i> Help
+      </button>
+    </div>
+  </div>
+  
+  <!-- Game Over Modal -->
+  <div class="modal win-modal" id="win-modal">
+    <div class="modal-content">
+      <button class="modal-close" id="win-close">&times;</button>
+      <h2 id="win-title">White Wins!</h2>
+      <p id="win-message">Congratulations on your victory!</p>
+      <button class="btn btn-roll" id="play-again-btn">
+        <i class="fas fa-play"></i> Play Again
+      </button>
+    </div>
+  </div>
+  
+  <!-- Help Modal -->
+  <div class="modal" id="help-modal">
+    <div class="modal-content">
+      <button class="modal-close" id="help-close">&times;</button>
+      <h2>How to Play Backgammon</h2>
+      
+      <div class="tutorial-steps">
+        <div class="tutorial-step">
+          <i class="fas fa-chess-pawn"></i>
+          <div class="tutorial-step-content">
+            <h3>Game Objective</h3>
+            <p>Move all your pieces to your home board and then bear them off. The first player to bear off all pieces wins.</p>
+          </div>
+        </div>
+        
+        <div class="tutorial-step">
+          <i class="fas fa-dice"></i>
+          <div class="tutorial-step-content">
+            <h3>Movement</h3>
+            <p>Roll two dice and move your pieces according to the numbers shown. You can move one piece twice or two pieces once.</p>
+          </div>
+        </div>
+        
+        <div class="tutorial-step">
+          <i class="fas fa-exchange-alt"></i>
+          <div class="tutorial-step-content">
+            <h3>Hitting</h3>
+            <p>If you land on a point with a single opponent piece (a blot), you hit it and send it to the bar.</p>
+          </div>
+        </div>
+        
+        <div class="tutorial-step">
+          <i class="fas fa-home"></i>
+          <div class="tutorial-step-content">
+            <h3>Bearing Off</h3>
+            <p>Once all your pieces are in your home board, you can start removing them based on dice rolls.</p>
+          </div>
+        </div>
+      </div>
+      
+      <button class="btn btn-roll" id="got-it-btn">
+        <i class="fas fa-thumbs-up"></i> Got It!
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // DOM Elements
+    const board = document.getElementById("board");
+    const bar = document.getElementById("bar");
+    const turnDisplay = document.getElementById("turn-display");
+    const turnText = document.getElementById("turn-text");
+    const turnIndicator = turnDisplay.querySelector(".turn-indicator");
+    const rollBtn = document.getElementById("roll-btn");
+    const helpBtn = document.getElementById("help-btn");
+    const die1El = document.getElementById("die1");
+    const die2El = document.getElementById("die2");
+    const winModal = document.getElementById("win-modal");
+    const winTitle = document.getElementById("win-title");
+    const winMessage = document.getElementById("win-message");
+    const winClose = document.getElementById("win-close");
+    const playAgainBtn = document.getElementById("play-again-btn");
+    const helpModal = document.getElementById("help-modal");
+    const helpClose = document.getElementById("help-close");
+    const gotItBtn = document.getElementById("got-it-btn");
+
+    // Game state
+    let currentPlayer = "white";
+    let gameActive = true;
+    let diceRolled = false;
+    let die1 = 0;
+    let die2 = 0;
+    let selectedChecker = null;
+    let boardState = Array(24).fill().map(() => []);
+
+    // Initialize the game
+    function initGame() {
+      // Clear the board
+      board.innerHTML = '';
+      board.appendChild(bar);
+      boardState = Array(24).fill().map(() => []);
+      
+      // Create points
+      for (let i = 0; i < 24; i++) {
+        const point = document.createElement("div");
+        point.className = "point";
+        point.dataset.index = i;
+        
+        if (i < 12) point.classList.add("bottom");
+        else point.classList.add("top");
+        
+        point.addEventListener("click", () => handlePointClick(i));
+        board.appendChild(point);
+      }
+      
+      // Initial setup (standard backgammon starting position)
+      placeCheckers(0, 2, "white");
+      placeCheckers(11, 5, "black");
+      placeCheckers(12, 5, "white");
+      placeCheckers(23, 2, "black");
+      
+      // Reset game state
+      currentPlayer = "white";
+      gameActive = true;
+      diceRolled = false;
+      die1 = 0;
+      die2 = 0;
+      selectedChecker = null;
+      updateUI();
+    }
+
+    // Place checkers on a point
+    function placeCheckers(index, count, color) {
+      const point = board.children[index];
+      for (let i = 0; i < count; i++) {
+        const checker = createChecker(color);
+        point.appendChild(checker);
+        boardState[index].push(color);
+      }
+    }
+
+    // Create a checker element
+    function createChecker(color) {
+      const checker = document.createElement("div");
+      checker.className = `checker ${color}`;
+      checker.addEventListener("click", (e) => {
+        e.stopPropagation();
+        handleCheckerClick(checker);
+      });
+      return checker;
+    }
+
+    // Handle checker clicks
+    function handleCheckerClick(checker) {
+      if (!gameActive || !diceRolled) return;
+      
+      // Only allow selecting your own checkers
+      if (!checker.classList.contains(currentPlayer)) return;
+      
+      // Deselect if clicking the same checker
+      if (selectedChecker === checker) {
+        checker.classList.remove("selected");
+        selectedChecker = null;
+        clearHighlights();
+        return;
+      }
+      
+      // Deselect previous checker
+      if (selectedChecker) {
+        selectedChecker.classList.remove("selected");
+      }
+      
+      // Select new checker
+      selectedChecker = checker;
+      checker.classList.add("selected");
+      
+      // Highlight possible moves
+      highlightPossibleMoves(checker);
+    }
+
+    // Highlight possible moves for selected checker
+    function highlightPossibleMoves(checker) {
+      clearHighlights();
+      
+      const fromPoint = checker.parentElement;
+      const fromIndex = parseInt(fromPoint.dataset.index);
+      
+      // Calculate possible moves based on dice
+      const moves = [];
+      if (die1 > 0) moves.push(die1);
+      if (die2 > 0) moves.push(die2);
+      if (die1 === die2) moves.push(die1, die2); // Doubles
+      
+      for (const move of moves) {
+        let toIndex;
+        if (currentPlayer === "white") {
+          toIndex = fromIndex - move;
+        } else {
+          toIndex = fromIndex + move;
+        }
+        
+        // Check if move is valid
+        if (isValidMove(fromIndex, toIndex)) {
+          const toPoint = board.children[toIndex];
+          toPoint.classList.add("highlight");
+        }
+      }
+    }
+
+    // Check if a move is valid
+    function isValidMove(fromIndex, toIndex) {
+      // Check if toIndex is within bounds
+      if (toIndex < 0 || toIndex > 23) {
+        // Bearing off logic would go here
+        return false;
+      }
+      
+      // Check if destination point is open or has only 1 opponent checker
+      const destination = boardState[toIndex];
+      if (destination.length > 1 && destination[0] !== currentPlayer) {
+        return false;
+      }
+      
+      // Additional rules would go here (like hitting blots, etc.)
+      return true;
+    }
+
+    // Handle point clicks
+    function handlePointClick(index) {
+      if (!gameActive || !diceRolled || !selectedChecker) return;
+      
+      const fromPoint = selectedChecker.parentElement;
+      const fromIndex = parseInt(fromPoint.dataset.index);
+      
+      // Calculate move distance
+      let distance;
+      if (currentPlayer === "white") {
+        distance = fromIndex - index;
+      } else {
+        distance = index - fromIndex;
+      }
+      
+      // Check if this is a valid move based on dice
+      if ((distance === die1 || distance === die2) && isValidMove(fromIndex, index)) {
+        // Move the checker
+        moveChecker(fromIndex, index);
+        
+        // Mark die as used
+        if (distance === die1) {
+          die1 = 0;
+          die1El.textContent = "-";
+        } else {
+          die2 = 0;
+          die2El.textContent = "-";
+        }
+        
+        // Check if all dice are used
+        if (die1 === 0 && die2 === 0) {
+          diceRolled = false;
+          switchPlayer();
+        }
+        
+        // Check for win
+        checkWin();
+      }
+    }
+
+    // Move a checker from one point to another
+    function moveChecker(fromIndex, toIndex) {
+      const fromPoint = board.children[fromIndex];
+      const toPoint = board.children[toIndex];
+      const checker = selectedChecker;
+      
+      // Remove from old point
+      fromPoint.removeChild(checker);
+      boardState[fromIndex].pop();
+      
+      // Check if we're hitting a blot
+      if (boardState[toIndex].length === 1 && boardState[toIndex][0] !== currentPlayer) {
+        const hitChecker = toPoint.querySelector(".checker");
+        toPoint.removeChild(hitChecker);
+        boardState[toIndex].pop();
+        
+        // Send to bar (simplified - would need to implement bar logic properly)
+        bar.appendChild(hitChecker);
+      }
+      
+      // Add to new point
+      toPoint.appendChild(checker);
+      boardState[toIndex].push(currentPlayer);
+      
+      // Deselect
+      checker.classList.remove("selected");
+      selectedChecker = null;
+      clearHighlights();
+    }
+
+    // Roll the dice
+    function rollDice() {
+      if (diceRolled) return;
+      
+      // Animate dice
+      die1El.classList.add("rolling");
+      die2El.classList.add("rolling");
+      
+      setTimeout(() => {
+        die1 = Math.floor(Math.random() * 6) + 1;
+        die2 = Math.floor(Math.random() * 6) + 1;
+        
+        die1El.textContent = die1;
+        die2El.textContent = die2;
+        
+        die1El.classList.remove("rolling");
+        die2El.classList.remove("rolling");
+        
+        diceRolled = true;
+        
+        // Highlight possible moves
+        if (selectedChecker) {
+          highlightPossibleMoves(selectedChecker);
+        }
+      }, 500);
+    }
+
+    // Switch to the other player
+    function switchPlayer() {
+      currentPlayer = currentPlayer === "white" ? "black" : "white";
+      updateUI();
+    }
+
+    // Check for win condition
+    function checkWin() {
+      // Simplified win condition - check if all pieces are in home board
+      // In a real game, you'd need to implement bearing off properly
+      const whiteWins = boardState.slice(18, 24).every(point => point.length > 0 && point[0] === "white");
+      const blackWins = boardState.slice(0, 6).every(point => point.length > 0 && point[0] === "black");
+      
+      if (whiteWins || blackWins) {
+        gameActive = false;
+        const winner = whiteWins ? "White" : "Black";
+        winTitle.textContent = `${winner} Wins!`;
+        winMessage.textContent = "Congratulations on your victory!";
+        winModal.classList.add("active");
+        createConfetti(winner.toLowerCase());
+      }
+    }
+
+    // Clear all highlighted points
+    function clearHighlights() {
+      document.querySelectorAll(".point.highlight").forEach(point => {
+        point.classList.remove("highlight");
+      });
+    }
+
+    // Update the UI
+    function updateUI() {
+      // Update turn display
+      turnText.textContent = `${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)}'s Turn`;
+      turnIndicator.classList.remove("white", "black");
+      turnIndicator.classList.add(currentPlayer);
+      
+      // Update dice display
+      die1El.classList.toggle("active", currentPlayer === "white");
+      die2El.classList.toggle("active", currentPlayer === "white");
+    }
+
+    // Create confetti effect
+    function createConfetti(winner) {
+      const colors = winner === "white" ? 
+        ['#ffffff', '#e0e0e0', '#f0f0f0'] : 
+        ['#333333', '#000000', '#222222'];
+      
+      for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement("div");
+        confetti.classList.add("confetti");
+        confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.left = `${Math.random() * 100}vw`;
+        confetti.style.top = "-10px";
+        confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+        
+        document.body.appendChild(confetti);
+        
+        // Animate confetti
+        setTimeout(() => {
+          confetti.style.opacity = "1";
+          confetti.style.animation = `confettiFall ${Math.random() * 3 + 2}s linear forwards`;
+          setTimeout(() => confetti.remove(), 5000);
+        }, 10);
+      }
+      
+      // Add CSS for animation
+      const style = document.createElement("style");
+      style.textContent = `
+        @keyframes confettiFall {
+          0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // Event listeners
+    rollBtn.addEventListener("click", rollDice);
+    playAgainBtn.addEventListener("click", () => {
+      winModal.classList.remove("active");
+      initGame();
+    });
+    helpBtn.addEventListener("click", () => helpModal.classList.add("active"));
+    helpClose.addEventListener("click", () => helpModal.classList.remove("active"));
+    gotItBtn.addEventListener("click", () => helpModal.classList.remove("active"));
+    winClose.addEventListener("click", () => winModal.classList.remove("active"));
+
+    // Close modals when clicking outside
+    [winModal, helpModal].forEach(modal => {
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          modal.classList.remove("active");
+        }
+      });
+    });
+
+    // Initialize the game
+    initGame();
+  </script>
+</body>
+</html>

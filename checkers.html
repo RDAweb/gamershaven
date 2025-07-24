@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Neon Checkers</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: #00ff9d;
+      --secondary-color: #00b8ff;
+      --accent-color: #ff2d75;
+      --background-dark: #0f0f1a;
+      --background-light: #1a1a2e;
+      --text-color: #ffffff;
+      --text-secondary: rgba(255, 255, 255, 0.7);
+      --cell-dark: #2a2a3a;
+      --cell-light: #3a3a4a;
+      --red-piece: linear-gradient(135deg, #ff5e62, #ff2400);
+      --black-piece: linear-gradient(135deg, #434343, #000000);
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      --glow: 0 0 15px rgba(0, 255, 157, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--background-dark);
+      color: var(--text-color);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+      overflow-x: hidden;
+    }
+
+    .background-pattern {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 30%, rgba(0, 255, 157, 0.05) 0%, transparent 20%),
+        radial-gradient(circle at 80% 70%, rgba(0, 184, 255, 0.05) 0%, transparent 20%),
+        linear-gradient(to bottom, var(--background-dark), var(--background-light));
+      z-index: -1;
+    }
+
+    .game-container {
+      width: 100%;
+      max-width: 600px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 15px;
+      background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      font-weight: 700;
+    }
+
+    .game-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      background: rgba(26, 26, 46, 0.8);
+      padding: 15px;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+
+    .player-turn {
+      font-size: 1.2rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .player-turn.red {
+      color: #ff5e62;
+    }
+
+    .player-turn.black {
+      color: #fff;
+    }
+
+    .turn-indicator {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .turn-indicator.red {
+      background: var(--red-piece);
+      box-shadow: 0 0 10px rgba(255, 94, 98, 0.7);
+    }
+
+    .turn-indicator.black {
+      background: var(--black-piece);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+    }
+
+    .score {
+      display: flex;
+      gap: 15px;
+    }
+
+    .score-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 1.1rem;
+    }
+
+    .piece-count {
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .piece-count.red {
+      background: var(--red-piece);
+      color: white;
+    }
+
+    .piece-count.black {
+      background: var(--black-piece);
+      color: white;
+    }
+
+    #game-board {
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 1/1;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
+
+    .cell {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .cell.dark {
+      background-color: var(--cell-dark);
+    }
+
+    .cell.light {
+      background-color: var(--cell-light);
+    }
+
+    .cell.highlight::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 30%;
+      height: 30%;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+
+    .cell.capture::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 50%;
+      height: 50%;
+      border-radius: 50%;
+      background: rgba(255, 45, 117, 0.3);
+      box-shadow: 0 0 15px rgba(255, 45, 117, 0.5);
+      border: 2px solid rgba(255, 45, 117, 0.8);
+    }
+
+    .piece {
+      width: 80%;
+      height: 80%;
+      border-radius: 50%;
+      cursor: pointer;
+      position: relative;
+      transition: var(--transition);
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .piece::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%);
+      opacity: 0;
+      transition: var(--transition);
+    }
+
+    .piece:hover::before {
+      opacity: 1;
+    }
+
+    .piece.red {
+      background: var(--red-piece);
+      box-shadow: 0 0 15px rgba(255, 94, 98, 0.5);
+    }
+
+    .piece.black {
+      background: var(--black-piece);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    }
+
+    .piece.selected {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+      z-index: 10;
+      animation: pulse 1s infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { box-shadow: 0 0 10px rgba(255, 215, 0, 0.8); }
+      to { box-shadow: 0 0 25px rgba(255, 215, 0, 0.8); }
+    }
+
+    .piece.king::after {
+      content: '★';
+      position: absolute;
+      color: gold;
+      font-size: 1.2rem;
+      text-shadow: 0 0 5px #000;
+      z-index: 3;
+    }
+
+    .game-controls {
+      margin-top: 25px;
+      display: flex;
+      gap: 15px;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 15px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+      opacity: 0;
+      transition: var(--transition);
+    }
+
+    .btn:hover::before {
+      opacity: 1;
+    }
+
+    .btn-restart {
+      background: linear-gradient(135deg, var(--accent-color), #ff5e8a);
+      color: white;
+      box-shadow: 0 5px 15px rgba(255, 45, 117, 0.3);
+    }
+
+    .btn-help {
+      background: rgba(26, 26, 46, 0.8);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+
+    .btn:hover {
+      transform: translateY(-3px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 15, 26, 0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: var(--transition);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+
+    .modal.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-content {
+      background: var(--background-light);
+      padding: 30px;
+      border-radius: 20px;
+      max-width: 450px;
+      width: 90%;
+      text-align: center;
+      transform: translateY(-50px);
+      transition: var(--transition);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
+
+    .modal-content::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 5px;
+      background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    }
+
+    .modal.active .modal-content {
+      transform: translateY(0);
+    }
+
+    .modal h2 {
+      color: var(--primary-color);
+      margin-bottom: 20px;
+      font-size: 1.8rem;
+    }
+
+    .modal p {
+      margin-bottom: 15px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+    }
+
+    .modal .highlight {
+      color: var(--text-color);
+      font-weight: 600;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .modal-close:hover {
+      color: var(--accent-color);
+    }
+
+    .win-modal .modal-content {
+      max-width: 350px;
+    }
+
+    .win-modal h2 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    .win-modal p {
+      font-size: 1.2rem;
+      margin-bottom: 25px;
+    }
+
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: var(--primary-color);
+      opacity: 0;
+      z-index: 99;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 2rem;
+      }
+
+      #game-board {
+        max-width: 90vw;
+        max-height: 90vw;
+      }
+
+      .game-header {
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px 10px;
+      }
+
+      .player-turn {
+        font-size: 1rem;
+      }
+
+      .score {
+        gap: 10px;
+      }
+
+      .game-controls {
+        flex-direction: column;
+      }
+    }
+
+    /* Tutorial styles */
+    .tutorial-steps {
+      text-align: left;
+      margin-bottom: 20px;
+    }
+
+    .tutorial-step {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+
+    .tutorial-step i {
+      color: var(--primary-color);
+      margin-right: 10px;
+      font-size: 1.2rem;
+      margin-top: 3px;
+    }
+
+    .tutorial-step-content {
+      flex: 1;
+    }
+
+    .tutorial-step h3 {
+      color: var(--text-color);
+      font-size: 1.1rem;
+      margin-bottom: 5px;
+    }
+
+    .tutorial-step p {
+      margin-bottom: 0;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="background-pattern"></div>
+  
+  <div class="game-container">
+    <h1>NEON CHECKERS</h1>
+    
+    <div class="game-header">
+      <div class="player-turn red" id="turn-display">
+        <span class="turn-indicator red"></span>
+        <span id="turn-text">Red's Turn</span>
+      </div>
+      
+      <div class="score">
+        <div class="score-item">
+          <div class="piece-count red" id="red-count">12</div>
+          <span>Red</span>
+        </div>
+        <div class="score-item">
+          <div class="piece-count black" id="black-count">12</div>
+          <span>Black</span>
+        </div>
+      </div>
+    </div>
+    
+    <div id="game-board"></div>
+    
+    <div class="game-controls">
+      <button class="btn btn-restart" id="restart-btn">
+        <i class="fas fa-redo"></i> Restart
+      </button>
+      <button class="btn btn-help" id="help-btn">
+        <i class="fas fa-question-circle"></i> Help
+      </button>
+    </div>
+  </div>
+  
+  <!-- Game Over Modal -->
+  <div class="modal win-modal" id="win-modal">
+    <div class="modal-content">
+      <button class="modal-close" id="win-close">&times;</button>
+      <h2 id="win-title">Red Wins!</h2>
+      <p id="win-message">Congratulations on your victory!</p>
+      <button class="btn btn-restart" id="play-again-btn">
+        <i class="fas fa-play"></i> Play Again
+      </button>
+    </div>
+  </div>
+  
+  <!-- Help Modal -->
+  <div class="modal" id="help-modal">
+    <div class="modal-content">
+      <button class="modal-close" id="help-close">&times;</button>
+      <h2>How to Play Checkers</h2>
+      
+      <div class="tutorial-steps">
+        <div class="tutorial-step">
+          <i class="fas fa-chess-pawn"></i>
+          <div class="tutorial-step-content">
+            <h3>Basic Movement</h3>
+            <p>Pieces move diagonally forward one square to an empty dark square.</p>
+          </div>
+        </div>
+        
+        <div class="tutorial-step">
+          <i class="fas fa-chess-queen"></i>
+          <div class="tutorial-step-content">
+            <h3>King Pieces</h3>
+            <p>When a piece reaches the farthest row, it becomes a King and can move both forward and backward.</p>
+          </div>
+        </div>
+        
+        <div class="tutorial-step">
+          <i class="fas fa-exchange-alt"></i>
+          <div class="tutorial-step-content">
+            <h3>Capturing</h3>
+            <p>Jump over an opponent's piece diagonally to capture it. Multiple captures in one turn are allowed.</p>
+          </div>
+        </div>
+        
+        <div class="tutorial-step">
+          <i class="fas fa-exclamation-circle"></i>
+          <div class="tutorial-step-content">
+            <h3>Forced Captures</h3>
+            <p>If a capture is available, you must take it. The game will highlight available captures.</p>
+          </div>
+        </div>
+      </div>
+      
+      <button class="btn btn-restart" id="got-it-btn">
+        <i class="fas fa-thumbs-up"></i> Got It!
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // DOM Elements
+    const board = document.getElementById("game-board");
+    const turnDisplay = document.getElementById("turn-display");
+    const turnText = document.getElementById("turn-text");
+    const turnIndicator = turnDisplay.querySelector(".turn-indicator");
+    const redCount = document.getElementById("red-count");
+    const blackCount = document.getElementById("black-count");
+    const restartBtn = document.getElementById("restart-btn");
+    const helpBtn = document.getElementById("help-btn");
+    const winModal = document.getElementById("win-modal");
+    const winTitle = document.getElementById("win-title");
+    const winMessage = document.getElementById("win-message");
+    const winClose = document.getElementById("win-close");
+    const playAgainBtn = document.getElementById("play-again-btn");
+    const helpModal = document.getElementById("help-modal");
+    const helpClose = document.getElementById("help-close");
+    const gotItBtn = document.getElementById("got-it-btn");
+
+    // Game state
+    let selectedPiece = null;
+    let currentPlayer = "red";
+    let redPieces = 12;
+    let blackPieces = 12;
+    let forcedCapture = null;
+    let gameActive = true;
+
+    // Initialize the game
+    function initGame() {
+      board.innerHTML = "";
+      createBoard();
+      resetGameState();
+      updateUI();
+    }
+
+    // Create the checkerboard
+    function createBoard() {
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          const cell = document.createElement("div");
+          cell.classList.add("cell");
+          cell.dataset.row = row;
+          cell.dataset.col = col;
+
+          // Alternate cell colors
+          const isDark = (row + col) % 2 === 1;
+          cell.classList.add(isDark ? "dark" : "light");
+
+          // Place initial pieces
+          if (isDark) {
+            if (row < 3) {
+              addPiece(cell, "black");
+            } else if (row > 4) {
+              addPiece(cell, "red");
+            }
+          }
+
+          cell.addEventListener("click", () => handleCellClick(cell));
+          board.appendChild(cell);
+        }
+      }
+    }
+
+    // Add a piece to a cell
+    function addPiece(cell, color, isKing = false) {
+      const piece = document.createElement("div");
+      piece.classList.add("piece", color);
+      if (isKing) piece.classList.add("king");
+      piece.dataset.color = color;
+      cell.appendChild(piece);
+    }
+
+    // Handle cell clicks
+    function handleCellClick(cell) {
+      if (!gameActive) return;
+
+      const piece = cell.querySelector(".piece");
+      
+      // If we have a forced capture, only allow that piece to move
+      if (forcedCapture && piece !== forcedCapture) {
+        return;
+      }
+
+      // Selecting a piece
+      if (piece && piece.dataset.color === currentPlayer) {
+        selectPiece(piece, cell);
+        return;
+      }
+
+      // Moving a piece
+      if (selectedPiece) {
+        const from = selectedPiece.parentElement;
+        const to = cell;
+        const result = tryMove(from, to);
+
+        if (result.success) {
+          clearHighlights();
+          deselectPiece();
+          
+          // Check if there's another capture available with the same piece
+          if (result.captured && canCaptureAgain(to)) {
+            selectPiece(to.querySelector(".piece"), to, true);
+          } else {
+            forcedCapture = null;
+            switchPlayer();
+          }
+        }
+      }
+    }
+
+    // Select a piece and highlight valid moves
+    function selectPiece(piece, cell, isForcedCapture = false) {
+      if (selectedPiece) {
+        selectedPiece.classList.remove("selected");
+      }
+      
+      selectedPiece = piece;
+      piece.classList.add("selected");
+      
+      if (isForcedCapture) {
+        forcedCapture = piece;
+      }
+      
+      highlightValidMoves(cell, isForcedCapture);
+    }
+
+    // Deselect the current piece
+    function deselectPiece() {
+      if (selectedPiece) {
+        selectedPiece.classList.remove("selected");
+        selectedPiece = null;
+      }
+    }
+
+    // Highlight valid moves for the selected piece
+    function highlightValidMoves(cell, onlyCaptures = false) {
+      clearHighlights();
+      
+      const row = parseInt(cell.dataset.row);
+      const col = parseInt(cell.dataset.col);
+      const piece = cell.querySelector(".piece");
+      const color = piece.dataset.color;
+      const isKing = piece.classList.contains("king");
+      const dir = color === "red" ? -1 : 1;
+      
+      // Check normal moves (if not forced to capture)
+      if (!onlyCaptures) {
+        const moves = [
+          {row: row + dir, col: col - 1},
+          {row: row + dir, col: col + 1}
+        ];
+        
+        if (isKing) {
+          moves.push(
+            {row: row - dir, col: col - 1},
+            {row: row - dir, col: col + 1}
+          );
+        }
+        
+        for (const move of moves) {
+          if (isValidPosition(move.row, move.col)) {
+            const targetCell = getCell(move.row, move.col);
+            if (!targetCell.querySelector(".piece")) {
+              targetCell.classList.add("highlight");
+            }
+          }
+        }
+      }
+      
+      // Check capture moves
+      const captures = [
+        {row: row + dir*2, col: col - 2, midRow: row + dir, midCol: col - 1},
+        {row: row + dir*2, col: col + 2, midRow: row + dir, midCol: col + 1}
+      ];
+      
+      if (isKing) {
+        captures.push(
+          {row: row - dir*2, col: col - 2, midRow: row - dir, midCol: col - 1},
+          {row: row - dir*2, col: col + 2, midRow: row - dir, midCol: col + 1}
+        );
+      }
+      
+      for (const capture of captures) {
+        if (isValidPosition(capture.row, capture.col)) {
+          const targetCell = getCell(capture.row, capture.col);
+          const midCell = getCell(capture.midRow, capture.midCol);
+          const midPiece = midCell?.querySelector(".piece");
+          
+          if (!targetCell.querySelector(".piece") && 
+              midPiece && 
+              midPiece.dataset.color !== color) {
+            targetCell.classList.add("capture");
+          }
+        }
+      }
+    }
+
+    // Clear all highlighted cells
+    function clearHighlights() {
+      document.querySelectorAll(".highlight, .capture").forEach(cell => {
+        cell.classList.remove("highlight", "capture");
+      });
+    }
+
+    // Attempt to move a piece
+    function tryMove(from, to) {
+      const piece = from.querySelector(".piece");
+      if (!piece) return { success: false, captured: false };
+
+      const fromRow = parseInt(from.dataset.row);
+      const fromCol = parseInt(from.dataset.col);
+      const toRow = parseInt(to.dataset.row);
+      const toCol = parseInt(to.dataset.col);
+
+      const dx = toCol - fromCol;
+      const dy = toRow - fromRow;
+
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
+
+      if (to.children.length !== 0) return { success: false, captured: false };
+
+      const color = piece.dataset.color;
+      const isKing = piece.classList.contains("king");
+      const dir = color === "red" ? -1 : 1;
+
+      // Normal move
+      if (absDx === 1 && absDy === 1 && !forcedCapture) {
+        if (isKing || dy === dir) {
+          movePiece(from, to);
+          return { success: true, captured: false };
+        }
+      }
+
+      // Capture move
+      if (absDx === 2 && absDy === 2) {
+        const midRow = (fromRow + toRow) / 2;
+        const midCol = (fromCol + toCol) / 2;
+        const midCell = getCell(midRow, midCol);
+        const midPiece = midCell?.querySelector(".piece");
+
+        if (midPiece && midPiece.dataset.color !== color) {
+          // Capture the piece
+          midCell.innerHTML = "";
+          if (color === "red") {
+            blackPieces--;
+          } else {
+            redPieces--;
+          }
+          
+          // Move the capturing piece
+          movePiece(from, to);
+          
+          // Check for win condition
+          checkWinCondition();
+          
+          return { success: true, captured: true };
+        }
+      }
+
+      return { success: false, captured: false };
+    }
+
+    // Move a piece from one cell to another
+    function movePiece(from, to) {
+      const piece = from.querySelector(".piece");
+      if (!piece) return;
+
+      from.innerHTML = "";
+      const toRow = parseInt(to.dataset.row);
+      const isRed = piece.dataset.color === "red";
+
+      // King promotion
+      if ((isRed && toRow === 0) || (!isRed && toRow === 7)) {
+        piece.classList.add("king");
+        createParticles(to);
+      }
+
+      to.appendChild(piece);
+      updateUI();
+    }
+
+    // Check if the current piece can capture again
+    function canCaptureAgain(cell) {
+      const row = parseInt(cell.dataset.row);
+      const col = parseInt(cell.dataset.col);
+      const piece = cell.querySelector(".piece");
+      const color = piece.dataset.color;
+      const isKing = piece.classList.contains("king");
+      const dir = color === "red" ? -1 : 1;
+      
+      const captures = [
+        {row: row + dir*2, col: col - 2, midRow: row + dir, midCol: col - 1},
+        {row: row + dir*2, col: col + 2, midRow: row + dir, midCol: col + 1}
+      ];
+      
+      if (isKing) {
+        captures.push(
+          {row: row - dir*2, col: col - 2, midRow: row - dir, midCol: col - 1},
+          {row: row - dir*2, col: col + 2, midRow: row - dir, midCol: col + 1}
+        );
+      }
+      
+      for (const capture of captures) {
+        if (isValidPosition(capture.row, capture.col)) {
+          const targetCell = getCell(capture.row, capture.col);
+          const midCell = getCell(capture.midRow, capture.midCol);
+          const midPiece = midCell?.querySelector(".piece");
+          
+          if (!targetCell.querySelector(".piece") && 
+              midPiece && 
+              midPiece.dataset.color !== color) {
+            return true;
+          }
+        }
+      }
+      
+      return false;
+    }
+
+    // Check if a position is valid
+    function isValidPosition(row, col) {
+      return row >= 0 && row < 8 && col >= 0 && col < 8;
+    }
+
+    // Get a cell by row and column
+    function getCell(row, col) {
+      return document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+    }
+
+    // Switch to the other player
+    function switchPlayer() {
+      currentPlayer = currentPlayer === "red" ? "black" : "red";
+      updateUI();
+      
+      // Check if current player has any valid moves
+      if (!hasValidMoves()) {
+        endGame(currentPlayer === "red" ? "black" : "red", "blocking");
+      }
+    }
+
+    // Check if the current player has any valid moves
+    function hasValidMoves() {
+      const cells = document.querySelectorAll(".cell");
+      for (const cell of cells) {
+        const piece = cell.querySelector(".piece");
+        if (piece && piece.dataset.color === currentPlayer) {
+          const row = parseInt(cell.dataset.row);
+          const col = parseInt(cell.dataset.col);
+          const isKing = piece.classList.contains("king");
+          const dir = currentPlayer === "red" ? -1 : 1;
+          
+          // Check normal moves
+          const moves = [
+            {row: row + dir, col: col - 1},
+            {row: row + dir, col: col + 1}
+          ];
+          
+          if (isKing) {
+            moves.push(
+              {row: row - dir, col: col - 1},
+              {row: row - dir, col: col + 1}
+            );
+          }
+          
+          for (const move of moves) {
+            if (isValidPosition(move.row, move.col)) {
+              const targetCell = getCell(move.row, move.col);
+              if (!targetCell.querySelector(".piece")) {
+                return true;
+              }
+            }
+          }
+          
+          // Check capture moves
+          const captures = [
+            {row: row + dir*2, col: col - 2, midRow: row + dir, midCol: col - 1},
+            {row: row + dir*2, col: col + 2, midRow: row + dir, midCol: col + 1}
+          ];
+          
+          if (isKing) {
+            captures.push(
+              {row: row - dir*2, col: col - 2, midRow: row - dir, midCol: col - 1},
+              {row: row - dir*2, col: col + 2, midRow: row - dir, midCol: col + 1}
+            );
+          }
+          
+          for (const capture of captures) {
+            if (isValidPosition(capture.row, capture.col)) {
+              const targetCell = getCell(capture.row, capture.col);
+              const midCell = getCell(capture.midRow, capture.midCol);
+              const midPiece = midCell?.querySelector(".piece");
+              
+              if (!targetCell.querySelector(".piece") && 
+                  midPiece && 
+                  midPiece.dataset.color !== currentPlayer) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+      return false;
+    }
+
+    // Check if the game has been won
+    function checkWinCondition() {
+      if (blackPieces === 0) {
+        endGame("red", "capture");
+      } else if (redPieces === 0) {
+        endGame("black", "capture");
+      }
+    }
+
+    // End the game
+    function endGame(winner, reason) {
+      gameActive = false;
+      clearHighlights();
+      deselectPiece();
+      
+      winTitle.textContent = `${winner.charAt(0).toUpperCase() + winner.slice(1)} Wins!`;
+      
+      if (reason === "capture") {
+        winMessage.textContent = "All opponent pieces have been captured!";
+      } else {
+        winMessage.textContent = "Opponent has no valid moves left!";
+      }
+      
+      // Show confetti for the winner
+      createConfetti(winner);
+      
+      // Show win modal
+      winModal.classList.add("active");
+    }
+
+    // Update the UI
+    function updateUI() {
+      // Update turn display
+      turnText.textContent = `${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)}'s Turn`;
+      turnDisplay.classList.remove("red", "black");
+      turnDisplay.classList.add(currentPlayer);
+      turnIndicator.classList.remove("red", "black");
+      turnIndicator.classList.add(currentPlayer);
+      
+      // Update piece counts
+      redCount.textContent = redPieces;
+      blackCount.textContent = blackPieces;
+    }
+
+    // Reset game state
+    function resetGameState() {
+      selectedPiece = null;
+      currentPlayer = "red";
+      redPieces = 12;
+      blackPieces = 12;
+      forcedCapture = null;
+      gameActive = true;
+    }
+
+    // Create particle effects
+    function createParticles(cell) {
+      const rect = cell.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      
+      for (let i = 0; i < 15; i++) {
+        const particle = document.createElement("div");
+        particle.classList.add("particle");
+        particle.style.background = getRandomColor();
+        
+        // Random position around the cell
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * 30 + 10;
+        const x = centerX + Math.cos(angle) * distance;
+        const y = centerY + Math.sin(angle) * distance;
+        
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        
+        // Random flight direction and distance
+        const tx = (Math.random() - 0.5) * 150;
+        const ty = (Math.random() - 0.5) * 150;
+        
+        particle.style.setProperty('--tx', `${tx}px`);
+        particle.style.setProperty('--ty', `${ty}px`);
+        
+        document.body.appendChild(particle);
+        
+        // Animate particle
+        setTimeout(() => {
+          particle.style.animation = 'particleFly 1s forwards';
+          setTimeout(() => particle.remove(), 1000);
+        }, 10);
+      }
+      
+      // Add CSS for animation
+      const style = document.createElement("style");
+      style.textContent = `
+        @keyframes particleFly {
+          0% { transform: translate(0, 0) scale(1); opacity: 1; }
+          100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // Create confetti effect
+    function createConfetti(winner) {
+      const colors = winner === "red" ? 
+        ['#ff5e62', '#ff2400', '#ff8a00'] : 
+        ['#434343', '#000000', '#2a2a2a'];
+      
+      for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement("div");
+        confetti.classList.add("confetti");
+        confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.left = `${Math.random() * 100}vw`;
+        confetti.style.top = "-10px";
+        confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+        
+        document.body.appendChild(confetti);
+        
+        // Animate confetti
+        setTimeout(() => {
+          confetti.style.opacity = "1";
+          confetti.style.animation = `confettiFall ${Math.random() * 3 + 2}s linear forwards`;
+          setTimeout(() => confetti.remove(), 5000);
+        }, 10);
+      }
+      
+      // Add CSS for animation
+      const style = document.createElement("style");
+      style.textContent = `
+        @keyframes confettiFall {
+          0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // Get a random color
+    function getRandomColor() {
+      const colors = ['#00ff9d', '#00b8ff', '#ff2d75', '#ffd700', '#a162e8'];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    // Event listeners
+    restartBtn.addEventListener("click", initGame);
+    playAgainBtn.addEventListener("click", () => {
+      winModal.classList.remove("active");
+      initGame();
+    });
+    helpBtn.addEventListener("click", () => helpModal.classList.add("active"));
+    helpClose.addEventListener("click", () => helpModal.classList.remove("active"));
+    gotItBtn.addEventListener("click", () => helpModal.classList.remove("active"));
+    winClose.addEventListener("click", () => winModal.classList.remove("active"));
+
+    // Close modals when clicking outside
+    [winModal, helpModal].forEach(modal => {
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          modal.classList.remove("active");
+        }
+      });
+    });
+
+    // Initialize the game
+    initGame();
+  </script>
+</body>
+</html>

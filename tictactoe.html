@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Tic-Tac-Toe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4361ee;
+      --primary-dark: #3a56d4;
+      --secondary: #f72585;
+      --secondary-dark: #e5177b;
+      --dark: #212529;
+      --light: #f8f9fa;
+      --gray: #6c757d;
+      --success: #4cc9f0;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
+      --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+    
+    body {
+      background-color: #f1f3f5;
+      color: var(--dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 480px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      transform: translateY(0);
+      transition: var(--transition);
+    }
+    
+    .container:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+    }
+    
+    header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    header::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd' opacity='0.1'%3E%3Cg fill='%23FFFFFF' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .subtitle {
+      font-size: 14px;
+      opacity: 0.9;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .game-content {
+      padding: 24px;
+    }
+    
+    .game-modes {
+      display: flex;
+      background: #f1f3f5;
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 24px;
+    }
+    
+    .mode-btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      background: transparent;
+      font-weight: 600;
+      color: var(--gray);
+      cursor: pointer;
+      border-radius: 8px;
+      transition: var(--transition);
+    }
+    
+    .mode-btn.active {
+      background: white;
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .status {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      padding: 12px;
+      background: rgba(67, 97, 238, 0.1);
+      border-radius: 8px;
+      color: var(--primary);
+    }
+    
+    .board {
+      display: grid;
+      grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    
+    .cell {
+      aspect-ratio: 1;
+      background: white;
+      border-radius: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 48px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .cell::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(67, 97, 238, 0.1), rgba(247, 37, 133, 0.1));
+      opacity: 0;
+      transition: var(--transition);
+    }
+    
+    .cell:hover::before {
+      opacity: 1;
+    }
+    
+    .cell.x {
+      color: var(--primary);
+    }
+    
+    .cell.o {
+      color: var(--secondary);
+    }
+    
+    .cell.winner {
+      animation: pulse 1s infinite alternate;
+      background: linear-gradient(135deg, rgba(67, 97, 238, 0.1), rgba(76, 201, 240, 0.1));
+    }
+    
+    @keyframes pulse {
+      from {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.4);
+      }
+      to {
+        transform: scale(1.02);
+        box-shadow: 0 0 0 6px rgba(67, 97, 238, 0);
+      }
+    }
+    
+    .controls {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 6px rgba(67, 97, 238, 0.2);
+    }
+    
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(67, 97, 238, 0.25);
+    }
+    
+    .btn-secondary {
+      background: var(--light);
+      color: var(--dark);
+    }
+    
+    .btn-secondary:hover {
+      background: #e9ecef;
+    }
+    
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e9ecef;
+    }
+    
+    .stat {
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .confetti {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 100;
+    }
+    
+    @media (max-width: 480px) {
+      .container {
+        border-radius: 12px;
+      }
+      
+      header {
+        padding: 20px;
+      }
+      
+      h1 {
+        font-size: 24px;
+      }
+      
+      .game-content {
+        padding: 20px;
+      }
+      
+      .cell {
+        font-size: 40px;
+      }
+      
+      .btn {
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Tic-Tac-Toe Pro</h1>
+      <div class="subtitle">The ultimate strategy game</div>
+    </header>
+    
+    <div class="game-content">
+      <div class="game-modes">
+        <button id="pvp-btn" class="mode-btn active">Player vs Player</button>
+        <button id="ai-btn" class="mode-btn">Player vs AI</button>
+      </div>
+      
+      <div class="status" id="status">Player X's turn</div>
+      
+      <div class="board" id="board"></div>
+      
+      <div class="controls">
+        <button id="reset-btn" class="btn btn-primary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 6V9L16 5L12 1V4C7.58 4 4 7.58 4 12C4 13.57 4.46 15.03 5.24 16.26L6.7 14.8C6.25 13.97 6 13.01 6 12C6 8.69 8.69 6 12 6ZM18.76 7.74L17.3 9.2C17.74 10.04 18 10.99 18 12C18 15.31 15.31 18 12 18V15L8 19L12 23V20C16.42 20 20 16.42 20 12C20 10.43 19.54 8.97 18.76 7.74Z" fill="white"/>
+          </svg>
+          Restart
+        </button>
+        <button id="new-game-btn" class="btn btn-secondary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13 3H11V6H13V3ZM17.25 4.76L15.83 6.17L17.74 8.09L19.16 6.68L17.25 4.76ZM19 11H22V13H19V11ZM6.83 6.17L5.42 4.76L3.5 6.68L4.92 8.09L6.83 6.17ZM12 8C9.24 8 7 10.24 7 13C7 15.76 9.24 18 12 18C14.76 18 17 15.76 17 13C17 10.24 14.76 8 12 8ZM3 11H6V13H3V11ZM16.24 17.66L17.66 19.08L19.58 17.16L18.16 15.74L16.24 17.66ZM4.92 17.91L6.34 19.33L8.25 17.41L6.83 16L4.92 17.91ZM12 20C10.87 20 9.78 19.76 8.79 19.32L7.32 20.79C8.66 21.44 10.26 21.79 12 21.79C13.74 21.79 15.34 21.44 16.68 20.79L15.21 19.32C14.22 19.76 13.13 20 12 20Z" fill="#212529"/>
+          </svg>
+          New Game
+        </button>
+      </div>
+      
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value" id="x-wins">0</div>
+          <div class="stat-label">X Wins</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="draws">0</div>
+          <div class="stat-label">Draws</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="o-wins">0</div>
+          <div class="stat-label">O Wins</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="confetti" class="confetti"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <script>
+    // Game elements
+    const boardEl = document.getElementById('board');
+    const statusEl = document.getElementById('status');
+    const resetBtn = document.getElementById('reset-btn');
+    const newGameBtn = document.getElementById('new-game-btn');
+    const pvpBtn = document.getElementById('pvp-btn');
+    const aiBtn = document.getElementById('ai-btn');
+    const xWinsEl = document.getElementById('x-wins');
+    const oWinsEl = document.getElementById('o-wins');
+    const drawsEl = document.getElementById('draws');
+    const confettiEl = document.getElementById('confetti');
+    
+    // Game state
+    let board = Array(9).fill('');
+    let currentPlayer = 'X';
+    let gameActive = true;
+    let vsAI = false;
+    let stats = { xWins: 0, oWins: 0, draws: 0 };
+    const winPatterns = [
+      [0,1,2],[3,4,5],[6,7,8], // rows
+      [0,3,6],[1,4,7],[2,5,8], // columns
+      [0,4,8],[2,4,6]          // diagonals
+    ];
+    
+    // Load stats from localStorage
+    function loadStats() {
+      const savedStats = localStorage.getItem('ticTacToeStats');
+      if (savedStats) {
+        stats = JSON.parse(savedStats);
+        updateStats();
+      }
+    }
+    
+    // Save stats to localStorage
+    function saveStats() {
+      localStorage.setItem('ticTacToeStats', JSON.stringify(stats));
+    }
+    
+    // Update stats display
+    function updateStats() {
+      xWinsEl.textContent = stats.xWins;
+      oWinsEl.textContent = stats.oWins;
+      drawsEl.textContent = stats.draws;
+    }
+    
+    // Initialize game
+    function initGame() {
+      board = Array(9).fill('');
+      currentPlayer = 'X';
+      gameActive = true;
+      updateStatus();
+      renderBoard();
+    }
+    
+    // Render the board
+    function renderBoard() {
+      boardEl.innerHTML = '';
+      
+      board.forEach((cell, index) => {
+        const cellEl = document.createElement('div');
+        cellEl.className = `cell ${cell.toLowerCase()}`;
+        cellEl.textContent = cell;
+        cellEl.addEventListener('click', () => handleCellClick(index));
+        
+        // Add animation for new marks
+        if (cell) {
+          cellEl.style.animation = 'none';
+          setTimeout(() => {
+            cellEl.style.animation = 'zoomIn 0.3s ease-out';
+          }, 10);
+        }
+        
+        boardEl.appendChild(cellEl);
+      });
+    }
+    
+    // Handle cell click
+    function handleCellClick(index) {
+      if (!gameActive || board[index] !== '') return;
+      
+      // Make move
+      board[index] = currentPlayer;
+      renderBoard();
+      
+      // Check for winner or draw
+      if (checkWinner()) {
+        gameActive = false;
+        highlightWinningCells();
+        updateStatus(`${currentPlayer} wins!`);
+        
+        // Update stats
+        if (currentPlayer === 'X') {
+          stats.xWins++;
+        } else {
+          stats.oWins++;
+        }
+        saveStats();
+        updateStats();
+        
+        // Celebrate!
+        if (currentPlayer === 'X') {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6, x: 0.25 }
+          });
+        } else {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6, x: 0.75 }
+          });
+        }
+        
+        return;
+      } else if (isDraw()) {
+        gameActive = false;
+        updateStatus("It's a draw!");
+        stats.draws++;
+        saveStats();
+        updateStats();
+        return;
+      }
+      
+      // Switch player
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      updateStatus();
+      
+      // AI move if applicable
+      if (gameActive && vsAI && currentPlayer === 'O') {
+        setTimeout(makeAIMove, 500);
+      }
+    }
+    
+    // Make AI move
+    function makeAIMove() {
+      if (!gameActive) return;
+      
+      // Try to win if possible
+      let move = findWinningMove('O');
+      if (move === null) {
+        // Block opponent's winning move
+        move = findWinningMove('X');
+        if (move === null) {
+          // Take center if available
+          if (board[4] === '') {
+            move = 4;
+          } else {
+            // Choose random available move
+            const availableMoves = board.map((cell, idx) => cell === '' ? idx : null).filter(val => val !== null);
+            move = availableMoves[Math.floor(Math.random() * availableMoves.length)];
+          }
+        }
+      }
+      
+      if (move !== null) {
+        board[move] = 'O';
+        renderBoard();
+        
+        if (checkWinner()) {
+          gameActive = false;
+          highlightWinningCells();
+          updateStatus('O wins!');
+          stats.oWins++;
+          saveStats();
+          updateStats();
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6, x: 0.75 }
+          });
+          return;
+        } else if (isDraw()) {
+          gameActive = false;
+          updateStatus("It's a draw!");
+          stats.draws++;
+          saveStats();
+          updateStats();
+          return;
+        }
+        
+        currentPlayer = 'X';
+        updateStatus();
+      }
+    }
+    
+    // Find a winning move for the given player
+    function findWinningMove(player) {
+      for (const pattern of winPatterns) {
+        const [a, b, c] = pattern;
+        if (board[a] === player && board[b] === player && board[c] === '') return c;
+        if (board[a] === player && board[c] === player && board[b] === '') return b;
+        if (board[b] === player && board[c] === player && board[a] === '') return a;
+      }
+      return null;
+    }
+    
+    // Check for winner
+    function checkWinner() {
+      for (const pattern of winPatterns) {
+        const [a, b, c] = pattern;
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+          return true;
+        }
+      }
+      return false;
+    }
+    
+    // Highlight winning cells
+    function highlightWinningCells() {
+      for (const pattern of winPatterns) {
+        const [a, b, c] = pattern;
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+          const cells = boardEl.children;
+          cells[a].classList.add('winner');
+          cells[b].classList.add('winner');
+          cells[c].classList.add('winner');
+          break;
+        }
+      }
+    }
+    
+    // Check for draw
+    function isDraw() {
+      return !board.includes('') && !checkWinner();
+    }
+    
+    // Update game status
+    function updateStatus(message) {
+      if (message) {
+        statusEl.textContent = message;
+      } else {
+        statusEl.textContent = `Player ${currentPlayer}'s turn`;
+      }
+    }
+    
+    // Reset current game
+    function resetGame() {
+      initGame();
+    }
+    
+    // Start a completely new game (resets stats too)
+    function newGame() {
+      if (confirm('Are you sure you want to start a new game? This will reset all statistics.')) {
+        stats = { xWins: 0, oWins: 0, draws: 0 };
+        saveStats();
+        updateStats();
+        initGame();
+      }
+    }
+    
+    // Toggle game mode
+    function setGameMode(aiMode) {
+      vsAI = aiMode;
+      if (aiMode) {
+        aiBtn.classList.add('active');
+        pvpBtn.classList.remove('active');
+      } else {
+        aiBtn.classList.remove('active');
+        pvpBtn.classList.add('active');
+      }
+      resetGame();
+    }
+    
+    // Add zoomIn animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes zoomIn {
+        from { transform: scale(0.5); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Event listeners
+    resetBtn.addEventListener('click', resetGame);
+    newGameBtn.addEventListener('click', newGame);
+    pvpBtn.addEventListener('click', () => setGameMode(false));
+    aiBtn.addEventListener('click', () => setGameMode(true));
+    
+    // Initialize
+    loadStats();
+    initGame();
+  </script>
+</body>
+</html>

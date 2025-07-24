@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cosmic Balance</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6e00ff;
+      --secondary: #ff00aa;
+      --accent: #00f7ff;
+      --dark: #111;
+      --light: #fff;
+      --platform-width: 100px;
+      --ball-radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63);
+      color: var(--light);
+      text-align: center;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    header {
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.3);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    h1 {
+      font-family: 'Press Start 2P', cursive;
+      font-size: clamp(1.5rem, 6vw, 2.5rem);
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 10px rgba(110, 0, 255, 0.3);
+    }
+
+    .subtitle {
+      font-size: clamp(0.8rem, 3vw, 1.1rem);
+      opacity: 0.8;
+    }
+
+    .game-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+    }
+
+    #gameCanvas {
+      background: linear-gradient(to bottom, #0a0a1a, #1a1a2a);
+      display: block;
+      border-radius: 10px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+      max-width: 100%;
+      max-height: 70vh;
+      aspect-ratio: 4/5;
+      touch-action: none;
+    }
+
+    .controls {
+      display: flex;
+      gap: 20px;
+      margin-top: 25px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      padding: 12px 25px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border: none;
+      color: var(--light);
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 600;
+      font-size: clamp(0.9rem, 3vw, 1.1rem);
+      cursor: pointer;
+      border-radius: 50px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(110, 0, 255, 0.3);
+      min-width: 120px;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(110, 0, 255, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 5px rgba(110, 0, 255, 0.3);
+    }
+
+    .mobile-controls {
+      display: none;
+      width: 100%;
+      max-width: 400px;
+      margin-top: 20px;
+      justify-content: space-between;
+    }
+
+    .mobile-btn {
+      width: 80px;
+      height: 80px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      color: var(--light);
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    .mobile-btn:active {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .stats {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+      font-size: clamp(0.9rem, 3vw, 1.1rem);
+    }
+
+    .stat {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 8px 15px;
+      border-radius: 20px;
+    }
+
+    .level-selector {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .level-btn {
+      padding: 8px 15px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--light);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .level-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .level-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .powerup {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+      z-index: 10;
+    }
+
+    .game-over {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      z-index: 100;
+      display: none;
+    }
+
+    .game-over h2 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      color: var(--accent);
+    }
+
+    .game-over p {
+      margin-bottom: 20px;
+      font-size: 1.2rem;
+    }
+
+    @media (max-width: 768px) {
+      .mobile-controls {
+        display: flex;
+      }
+      
+      .controls {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>⚖️ COSMIC BALANCE</h1>
+    <p class="subtitle">Keep the ball in play as long as you can!</p>
+  </header>
+
+  <div class="game-container">
+    <div class="stats">
+      <div class="stat">Level: <span id="level-display">1</span></div>
+      <div class="stat">Score: <span id="score">0</span></div>
+      <div class="stat">Time: <span id="time">0</span>s</div>
+    </div>
+
+    <div class="level-selector" id="level-selector">
+      <div class="level-btn active" data-level="1">Level 1</div>
+      <div class="level-btn" data-level="2">Level 2</div>
+      <div class="level-btn" data-level="3">Level 3</div>
+    </div>
+
+    <canvas id="gameCanvas" width="400" height="500"></canvas>
+
+    <div class="mobile-controls">
+      <div class="mobile-btn" id="mobile-left">←</div>
+      <div class="mobile-btn" id="mobile-right">→</div>
+    </div>
+
+    <div class="controls">
+      <button id="start-btn">Start Game</button>
+      <button id="reset-btn" disabled>Reset</button>
+    </div>
+
+    <div class="game-over" id="game-over">
+      <h2>Game Over</h2>
+      <p id="final-score">Score: 0</p>
+      <p id="final-time">Time: 0s</p>
+      <button id="restart-btn">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    // Game Configuration
+    const config = {
+      levels: [
+        {
+          platformWidth: 100,
+          platformSpeed: 5,
+          ballGravity: 0.2,
+          ballBounce: -5,
+          powerups: false
+        },
+        {
+          platformWidth: 80,
+          platformSpeed: 6,
+          ballGravity: 0.25,
+          ballBounce: -4.5,
+          powerups: true
+        },
+        {
+          platformWidth: 60,
+          platformSpeed: 7,
+          ballGravity: 0.3,
+          ballBounce: -4,
+          powerups: true
+        }
+      ],
+      powerups: {
+        types: ['widen', 'slow', 'extraLife'],
+        spawnChance: 0.005,
+        duration: 5000 // 5 seconds
+      }
+    };
+
+    // Game State
+    let state = {
+      canvas: null,
+      ctx: null,
+      platform: {
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 15,
+        dx: 0,
+        originalWidth: 0,
+        originalSpeed: 0
+      },
+      ball: {
+        x: 0,
+        y: 0,
+        radius: 12,
+        dx: 0,
+        dy: 0,
+        gravity: 0,
+        bounce: 0
+      },
+      leftPressed: false,
+      rightPressed: false,
+      gameActive: false,
+      score: 0,
+      level: 0,
+      time: 0,
+      timer: null,
+      powerups: [],
+      activePowerups: {},
+      lives: 3
+    };
+
+    // DOM Elements
+    const canvas = document.getElementById("gameCanvas");
+    const scoreDisplay = document.getElementById("score");
+    const timeDisplay = document.getElementById("time");
+    const levelDisplay = document.getElementById("level-display");
+    const startBtn = document.getElementById("start-btn");
+    const resetBtn = document.getElementById("reset-btn");
+    const gameOverScreen = document.getElementById("game-over");
+    const finalScoreDisplay = document.getElementById("final-score");
+    const finalTimeDisplay = document.getElementById("final-time");
+    const restartBtn = document.getElementById("restart-btn");
+    const levelSelector = document.getElementById("level-selector");
+    const mobileLeftBtn = document.getElementById("mobile-left");
+    const mobileRightBtn = document.getElementById("mobile-right");
+
+    // Initialize the game
+    function initGame() {
+      state.canvas = canvas;
+      state.ctx = canvas.getContext("2d");
+      
+      setupEventListeners();
+      loadLevel(0);
+      draw();
+    }
+
+    // Load a level
+    function loadLevel(levelIndex) {
+      state.level = levelIndex;
+      state.platform.width = config.levels[levelIndex].platformWidth;
+      state.platform.originalWidth = config.levels[levelIndex].platformWidth;
+      state.platform.dx = config.levels[levelIndex].platformSpeed;
+      state.platform.originalSpeed = config.levels[levelIndex].platformSpeed;
+      state.ball.gravity = config.levels[levelIndex].ballGravity;
+      state.ball.bounce = config.levels[levelIndex].ballBounce;
+      
+      resetGameState();
+      updateUI();
+    }
+
+    // Reset game state for a new game
+    function resetGameState() {
+      state.platform.x = (canvas.width - state.platform.width) / 2;
+      state.platform.y = canvas.height - 30;
+      state.ball.x = canvas.width / 2;
+      state.ball.y = canvas.height / 2;
+      state.ball.dx = 0;
+      state.ball.dy = 0;
+      state.score = 0;
+      state.time = 0;
+      state.powerups = [];
+      state.activePowerups = {};
+      state.lives = 3;
+      
+      clearTimeout(state.timer);
+    }
+
+    // Start the game
+    function startGame() {
+      if (state.gameActive) return;
+      
+      resetGameState();
+      state.gameActive = true;
+      startBtn.disabled = true;
+      resetBtn.disabled = false;
+      
+      // Start timer
+      state.timer = setInterval(() => {
+        state.time++;
+        updateUI();
+      }, 1000);
+      
+      draw();
+    }
+
+    // Reset the current game
+    function resetGame() {
+      state.gameActive = false;
+      clearTimeout(state.timer);
+      startGame();
+    }
+
+    // End the game
+    function endGame() {
+      state.gameActive = false;
+      clearTimeout(state.timer);
+      
+      // Show game over screen
+      finalScoreDisplay.textContent = `Score: ${state.score}`;
+      finalTimeDisplay.textContent = `Time: ${state.time}s`;
+      gameOverScreen.style.display = 'block';
+      
+      startBtn.disabled = false;
+      resetBtn.disabled = true;
+    }
+
+    // Update game state
+    function update() {
+      if (!state.gameActive) return;
+      
+      // Move platform
+      if (state.leftPressed) state.platform.x -= state.platform.dx;
+      if (state.rightPressed) state.platform.x += state.platform.dx;
+      
+      // Clamp platform within canvas
+      state.platform.x = Math.max(0, Math.min(canvas.width - state.platform.width, state.platform.x));
+      
+      // Ball physics
+      state.ball.dy += state.ball.gravity;
+      state.ball.y += state.ball.dy;
+      
+      // Ball hits platform
+      if (
+        state.ball.y + state.ball.radius >= state.platform.y &&
+        state.ball.x >= state.platform.x &&
+        state.ball.x <= state.platform.x + state.platform.width &&
+        state.ball.dy > 0
+      ) {
+        // Calculate bounce angle based on where ball hits platform
+        const hitPosition = (state.ball.x - (state.platform.x + state.platform.width / 2)) / (state.platform.width / 2);
+        state.ball.dx = hitPosition * 3; // Horizontal velocity based on hit position
+        state.ball.dy = state.ball.bounce;
+        state.score += 10;
+        updateUI();
+      }
+      
+      // Ball out of bounds
+      if (state.ball.y > canvas.height) {
+        state.lives--;
+        if (state.lives <= 0) {
+          endGame();
+          return;
+        } else {
+          // Respawn ball
+          state.ball.x = canvas.width / 2;
+          state.ball.y = canvas.height / 2;
+          state.ball.dx = 0;
+          state.ball.dy = 0;
+        }
+      }
+      
+      // Ball wall collisions
+      if (state.ball.x - state.ball.radius < 0 || state.ball.x + state.ball.radius > canvas.width) {
+        state.ball.dx = -state.ball.dx;
+      }
+      
+      state.ball.x += state.ball.dx;
+      
+      // Spawn powerups randomly
+      if (config.levels[state.level].powerups && Math.random() < config.powerups.spawnChance) {
+        spawnPowerup();
+      }
+      
+      // Update powerups
+      updatePowerups();
+    }
+
+    // Spawn a new powerup
+    function spawnPowerup() {
+      const type = config.powerups.types[Math.floor(Math.random() * config.powerups.types.length)];
+      const powerup = {
+        x: Math.random() * (canvas.width - 30) + 15,
+        y: -20,
+        type: type,
+        width: 20,
+        height: 20,
+        active: true
+      };
+      
+      state.powerups.push(powerup);
+    }
+
+    // Update powerups
+    function updatePowerups() {
+      // Move powerups
+      state.powerups.forEach(powerup => {
+        if (powerup.active) {
+          powerup.y += 2;
+          
+          // Check if caught by platform
+          if (
+            powerup.y + powerup.height >= state.platform.y &&
+            powerup.x >= state.platform.x &&
+            powerup.x <= state.platform.x + state.platform.width &&
+            powerup.y <= state.platform.y + state.platform.height
+          ) {
+            activatePowerup(powerup);
+            powerup.active = false;
+          }
+          
+          // Check if out of bounds
+          if (powerup.y > canvas.height) {
+            powerup.active = false;
+          }
+          
+          // Check collision with ball (some powerups might be caught by ball)
+          if (
+            Math.sqrt(
+              Math.pow(powerup.x - state.ball.x, 2) + 
+              Math.pow(powerup.y - state.ball.y, 2)
+            ) < state.ball.radius + powerup.width/2
+          ) {
+            activatePowerup(powerup);
+            powerup.active = false;
+          }
+        }
+      });
+      
+      // Remove inactive powerups
+      state.powerups = state.powerups.filter(p => p.active);
+      
+      // Update active powerup timers
+      Object.keys(state.activePowerups).forEach(type => {
+        state.activePowerups[type].timeLeft -= 16; // Assuming 60fps
+        if (state.activePowerups[type].timeLeft <= 0) {
+          deactivatePowerup(type);
+        }
+      });
+    }
+
+    // Activate a powerup
+    function activatePowerup(powerup) {
+      // Add visual effect
+      const effect = document.createElement("div");
+      effect.className = "powerup";
+      effect.style.left = `${powerup.x}px`;
+      effect.style.top = `${powerup.y}px`;
+      effect.style.backgroundColor = 
+        powerup.type === 'widen' ? '#00ff9d' : 
+        powerup.type === 'slow' ? '#00f7ff' : '#ff00aa';
+      document.querySelector(".game-container").appendChild(effect);
+      
+      setTimeout(() => effect.remove(), 1000);
+      
+      // Apply powerup effect
+      switch (powerup.type) {
+        case 'widen':
+          state.platform.width = state.platform.originalWidth * 1.5;
+          break;
+        case 'slow':
+          state.platform.dx = state.platform.originalSpeed * 0.7;
+          break;
+        case 'extraLife':
+          state.lives++;
+          updateUI();
+          return; // No need to track time for this one
+      }
+      
+      // Track active powerup
+      state.activePowerups[powerup.type] = {
+        timeLeft: config.powerups.duration
+      };
+      
+      // Set timeout to deactivate
+      setTimeout(() => {
+        if (state.activePowerups[powerup.type]) {
+          deactivatePowerup(powerup.type);
+        }
+      }, config.powerups.duration);
+    }
+
+    // Deactivate a powerup
+    function deactivatePowerup(type) {
+      if (!state.activePowerups[type]) return;
+      
+      delete state.activePowerups[type];
+      
+      switch (type) {
+        case 'widen':
+          state.platform.width = state.platform.originalWidth;
+          break;
+        case 'slow':
+          state.platform.dx = state.platform.originalSpeed;
+          break;
+      }
+    }
+
+    // Draw game elements
+    function draw() {
+      if (!state.gameActive && !gameOverScreen.style.display) return;
+      
+      state.ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw background grid
+      state.ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      state.ctx.lineWidth = 1;
+      for (let x = 0; x < canvas.width; x += 40) {
+        state.ctx.beginPath();
+        state.ctx.moveTo(x, 0);
+        state.ctx.lineTo(x, canvas.height);
+        state.ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += 40) {
+        state.ctx.beginPath();
+        state.ctx.moveTo(0, y);
+        state.ctx.lineTo(canvas.width, y);
+        state.ctx.stroke();
+      }
+      
+      // Draw platform
+      state.ctx.fillStyle = '#00ff9d';
+      state.ctx.beginPath();
+      state.ctx.roundRect(
+        state.platform.x, 
+        state.platform.y, 
+        state.platform.width, 
+        state.platform.height, 
+        [10, 10, 0, 0]
+      );
+      state.ctx.fill();
+      
+      // Draw platform border
+      state.ctx.strokeStyle = '#fff';
+      state.ctx.lineWidth = 2;
+      state.ctx.stroke();
+      
+      // Draw ball
+      const gradient = state.ctx.createRadialGradient(
+        state.ball.x, state.ball.y, 0,
+        state.ball.x, state.ball.y, state.ball.radius
+      );
+      gradient.addColorStop(0, '#ff00aa');
+      gradient.addColorStop(1, '#6e00ff');
+      
+      state.ctx.fillStyle = gradient;
+      state.ctx.beginPath();
+      state.ctx.arc(state.ball.x, state.ball.y, state.ball.radius, 0, Math.PI * 2);
+      state.ctx.fill();
+      
+      // Draw ball highlight
+      state.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      state.ctx.beginPath();
+      state.ctx.arc(
+        state.ball.x - state.ball.radius/3, 
+        state.ball.y - state.ball.radius/3, 
+        state.ball.radius/3, 
+        0, 
+        Math.PI * 2
+      );
+      state.ctx.fill();
+      
+      // Draw powerups
+      state.powerups.forEach(powerup => {
+        if (powerup.active) {
+          state.ctx.fillStyle = 
+            powerup.type === 'widen' ? '#00ff9d' : 
+            powerup.type === 'slow' ? '#00f7ff' : '#ff00aa';
+          state.ctx.beginPath();
+          state.ctx.arc(powerup.x, powerup.y, 10, 0, Math.PI * 2);
+          state.ctx.fill();
+          
+          // Draw icon
+          state.ctx.fillStyle = '#fff';
+          state.ctx.font = '12px Arial';
+          state.ctx.textAlign = 'center';
+          state.ctx.textBaseline = 'middle';
+          state.ctx.fillText(
+            powerup.type === 'widen' ? 'W' : 
+            powerup.type === 'slow' ? 'S' : 'L', 
+            powerup.x, 
+            powerup.y
+          );
+        }
+      });
+      
+      // Draw lives
+      for (let i = 0; i < state.lives; i++) {
+        state.ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+        state.ctx.beginPath();
+        state.ctx.arc(20 + i * 30, 20, 8, 0, Math.PI * 2);
+        state.ctx.fill();
+      }
+      
+      update();
+      requestAnimationFrame(draw);
+    }
+
+    // Update UI elements
+    function updateUI() {
+      scoreDisplay.textContent = state.score;
+      timeDisplay.textContent = state.time;
+      levelDisplay.textContent = state.level + 1;
+    }
+
+    // Setup event listeners
+    function setupEventListeners() {
+      // Keyboard controls
+      document.addEventListener("keydown", e => {
+        if (e.key === "ArrowLeft") state.leftPressed = true;
+        if (e.key === "ArrowRight") state.rightPressed = true;
+      });
+      
+      document.addEventListener("keyup", e => {
+        if (e.key === "ArrowLeft") state.leftPressed = false;
+        if (e.key === "ArrowRight") state.rightPressed = false;
+      });
+      
+      // Touch controls
+      mobileLeftBtn.addEventListener("touchstart", () => state.leftPressed = true);
+      mobileLeftBtn.addEventListener("touchend", () => state.leftPressed = false);
+      mobileRightBtn.addEventListener("touchstart", () => state.rightPressed = true);
+      mobileRightBtn.addEventListener("touchend", () => state.rightPressed = false);
+      
+      // Mouse controls (for desktop)
+      canvas.addEventListener("mousemove", e => {
+        if (!state.gameActive) return;
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        state.platform.x = mouseX - state.platform.width / 2;
+        
+        // Clamp platform within canvas
+        state.platform.x = Math.max(0, Math.min(canvas.width - state.platform.width, state.platform.x));
+      });
+      
+      // Game controls
+      startBtn.addEventListener("click", startGame);
+      resetBtn.addEventListener("click", resetGame);
+      restartBtn.addEventListener("click", () => {
+        gameOverScreen.style.display = 'none';
+        startGame();
+      });
+      
+      // Level selector
+      levelSelector.querySelectorAll(".level-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          levelSelector.querySelectorAll(".level-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          loadLevel(parseInt(btn.dataset.level) - 1);
+        });
+      });
+    }
+
+    // Initialize the game when page loads
+    window.addEventListener("load", initGame);
+  </script>
+</body>
+</html>
