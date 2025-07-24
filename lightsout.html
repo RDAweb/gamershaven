@@ -273,12 +273,72 @@
         width: 80%;
       }
     }
+    .home-to-button {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: var(--light);
+      text-decoration: none;
+      border-radius: 50px;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    } 
+    .big-poster-card {
+      background: rgba(90, 90, 90, 0.11);
+      border-radius: 15px;
+      padding: 1.5rem;
+      text-decoration: none;
+      color: var(--light);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      border: 1px solid rgb(116, 255, 190);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      position: relative;
+      min-height: 140px;
+      max-height: 160px;
+      cursor: pointer;
+      overflow: hidden;
+      min-width: 50%;
+      max-width: 70%;
+      margin: 0 auto;
+    }
+    
+    .big-poster-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(45deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.1), 
+        transparent);
+      transform: translateX(-100%);
+      transition: transform 0.6s ease;
+    }
+    
+    .big-poster-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .big-poster-card:hover::before {
+      transform: translateX(100%);
+    }
   </style>
 </head>
 <body>
   <header>
     <h1>COSMIC LIGHTS OUT</h1>
     <p class="subtitle">Turn all the lights off to advance to the next world</p>
+    <a class="home-to-button" href="index.html" onclick="event.preventDefault(); window.open('https://www.profitableratecpm.com/f115v1xn?key=f9cccd6dd127d3ff268403618414e516', '_blank'); setTimeout(function(){ window.location.href = 'index.html'; }, 1000);">Home</a>
   </header>
 
   <div class="game-container">
@@ -299,9 +359,24 @@
       <button id="reset-btn">Reset Level</button>
       <button id="hint-btn">Hint (3 left)</button>
       <button id="new-game-btn">New Game</button>
+      <a class="home-to-button" href="index.html" onclick="event.preventDefault(); window.open('https://www.profitableratecpm.com/f115v1xn?key=f9cccd6dd127d3ff268403618414e516', '_blank'); setTimeout(function(){ window.location.href = 'index.html'; }, 1000);">Home</a>
     </div>
   </div>
 
+<br><br><br>
+  <a href="anagrams.html" class="big-poster-card" onclick="event.preventDefault(); window.open('https://www.profitableratecpm.com/f115v1xn?key=f9cccd6dd127d3ff268403618414e516', '_blank'); setTimeout(function(){ window.location.href = 'anagrams.html'; }, 1000);">
+    <p style="margin-top: 5px; margin-bottom: 10px;">Advertisement</p>
+<script type="text/javascript">
+	atOptions = {
+		'key' : 'ee32e7ecda6d80890ae2b75d2bc2985c',
+		'format' : 'iframe',
+		'height' : 90,
+		'width' : 728,
+		'params' : {}
+	};
+</script>
+<script type="text/javascript" src="//www.highperformanceformat.com/ee32e7ecda6d80890ae2b75d2bc2985c/invoke.js"></script>
+</a>
   <script>
     // Game Configuration
     const config = {

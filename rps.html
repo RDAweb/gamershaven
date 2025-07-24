@@ -371,6 +371,65 @@
     .pulse {
       animation: pulse 0.5s ease-in-out;
     }
+    .home-to-button {
+      display: inline-block;
+      padding: 10px 20px;
+      background: linear-gradient(145deg, var(--primary), var(--primary-dark));
+      color: white;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s;
+      margin-top: 20px;
+    } 
+    .big-poster-card {
+      background: rgba(90, 90, 90, 0.11);
+      border-radius: 15px;
+      padding: 1.5rem;
+      text-decoration: none;
+      color: var(--light);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      border: 1px solid rgb(116, 255, 190);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      position: relative;
+      min-height: 140px;
+      max-height: 160px;
+      cursor: pointer;
+      overflow: hidden;
+      min-width: 50%;
+      max-width: 70%;
+      margin: 0 auto;
+    }
+    
+    .big-poster-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(45deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.1), 
+        transparent);
+      transform: translateX(-100%);
+      transition: transform 0.6s ease;
+    }
+    
+    .big-poster-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .big-poster-card:hover::before {
+      transform: translateX(100%);
+    }
   </style>
 </head>
 <body>
@@ -378,6 +437,7 @@
     <header>
       <h1>Rock Paper Scissors Pro</h1>
       <div class="subtitle">The ultimate duel of chance and strategy</div>
+       <a class="home-to-button" href="index.html" onclick="event.preventDefault(); window.open('https://www.profitableratecpm.com/f115v1xn?key=f9cccd6dd127d3ff268403618414e516', '_blank'); setTimeout(function(){ window.location.href = 'index.html'; }, 1000);">Home</a>
     </header>
     
     <div class="game-area">
@@ -412,7 +472,6 @@
       </div>
       
       <button class="reset-btn" onclick="resetStats()">Reset Stats</button>
-      
       <div class="history">
         <div class="history-title">Match History</div>
         <div class="history-items" id="history-items">
@@ -424,6 +483,20 @@
   
   <div id="confetti" class="confetti"></div>
 
+<br><br><br>
+  <a href="anagrams.html" class="big-poster-card" onclick="event.preventDefault(); window.open('https://www.profitableratecpm.com/f115v1xn?key=f9cccd6dd127d3ff268403618414e516', '_blank'); setTimeout(function(){ window.location.href = 'anagrams.html'; }, 1000);">
+    <p style="margin-top: 5px; margin-bottom: 10px;">Advertisement</p>
+<script type="text/javascript">
+	atOptions = {
+		'key' : 'ee32e7ecda6d80890ae2b75d2bc2985c',
+		'format' : 'iframe',
+		'height' : 90,
+		'width' : 728,
+		'params' : {}
+	};
+</script>
+<script type="text/javascript" src="//www.highperformanceformat.com/ee32e7ecda6d80890ae2b75d2bc2985c/invoke.js"></script>
+</a>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <script>
     // Game elements

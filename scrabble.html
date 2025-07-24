@@ -1,374 +1,1222 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Stack Tower</title>
-  <style>
-    :root {
-      --primary: #4CAF50;
-      --primary-dark: #388E3C;
-      --accent: #FF5722;
-      --perfect: #FFD700;
-      --bg-dark: #111;
-      --bg-light: #222;
-      --text: #FFF;
-    }
-    
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent;
-    }
-    
-    body {
-      font-family: Arial, sans-serif;
-      background: var(--bg-dark);
-      color: var(--text);
-      text-align: center;
-      touch-action: manipulation;
-      overflow: hidden;
-    }
-    
-    #game-container {
-      max-width: 350px;
-      height: 500px;
-      margin: 20px auto;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Scrabble Game</title>
+    <style>
+        :root {
+            --tile-size: 40px;
+            --board-color: #f0d9b5;
+            --tile-color: #e5c79e;
+            --tile-border: #ba9c7d;
+            --special-dl: #b7d7e8;
+            --special-tl: #5b9bd5;
+            --special-dw: #f4cccc;
+            --special-tw: #e69138;
+            --special-center: #d5a6bd;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #333;
+            margin: 0;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .player-info, .game-stats {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+        }
+
+        .board-container {
+            position: relative;
+            margin: 0 auto;
+            width: calc(var(--tile-size) * 15 + 2px);
+            height: calc(var(--tile-size) * 15 + 2px);
+            border: 1px solid #333;
+            background-color: var(--board-color);
+            margin-bottom: 20px;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr);
+            width: 100%;
+            height: 100%;
+        }
+
+        .tile {
+            width: var(--tile-size);
+            height: var(--tile-size);
+            border: 1px solid var(--tile-border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+            position: relative;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        .tile.empty {
+            background-color: var(--tile-color);
+        }
+
+        .tile.dl { background-color: var(--special-dl); }
+        .tile.tl { background-color: var(--special-tl); }
+        .tile.dw { background-color: var(--special-dw); }
+        .tile.tw { background-color: var(--special-tw); }
+        .tile.center { background-color: var(--special-center); }
+
+        .tile .bonus-text {
+            position: absolute;
+            font-size: 8px;
+            bottom: 2px;
+            right: 2px;
+            color: #333;
+        }
+
+        .tile.placed {
+            background-color: #fff;
+            box-shadow: inset 0 0 3px rgba(0,0,0,0.3);
+        }
+
+        .rack {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .rack-tile {
+            width: calc(var(--tile-size) * 0.9);
+            height: calc(var(--tile-size) * 1.2);
+            background-color: #e5c79e;
+            border: 1px solid #ba9c7d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: grab;
+            position: relative;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+            border-radius: 3px;
+        }
+
+        .rack-tile .tile-value {
+            position: absolute;
+            font-size: 10px;
+            bottom: 2px;
+            right: 4px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4a6fa5;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #3a5a8f;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+        }
+
+        .word-info {
+            margin-top: 10px;
+            font-style: italic;
+            color: #666;
+        }
+
+        @media (max-width: 600px) {
+            :root {
+                --tile-size: 30px;
+            }
+            
+            .game-info {
+                flex-direction: column;
+            }
+            
+            .controls button {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+        }
+
+        /* Drag and drop styles */
+        .tile.highlight {
+            background-color: rgba(255, 255, 0, 0.3);
+        }
+
+        .rack-tile.dragging {
+            opacity: 0.5;
+        }
+        .home-to-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #4a6fa5, #3a5a8f);
+            color: white;
+            border-radius: 50px;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: background 0.3s, transform 0.2s;
+        } 
+    .big-poster-card {
+      background: rgba(90, 90, 90, 0.11);
+      border-radius: 15px;
+      padding: 1.5rem;
+      text-decoration: none;
+      color: var(--light);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      border: 1px solid rgb(116, 255, 190);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
       position: relative;
-      background: var(--bg-light);
-      overflow: hidden;
-      border-radius: 10px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    }
-    
-    .block {
-      position: absolute;
-      height: 30px;
-      background: var(--primary);
-      transition: left 0.1s linear, width 0.2s ease-out;
-      will-change: left, width;
-    }
-    
-    .block.perfect {
-      background: var(--perfect);
-      box-shadow: 0 0 15px var(--perfect);
-    }
-    
-    .block.missed {
-      background: var(--accent);
-    }
-    
-    #score-display {
-      font-size: 24px;
-      margin: 10px 0;
-    }
-    
-    #controls {
-      margin-top: 20px;
-    }
-    
-    button {
-      padding: 12px 25px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 25px;
-      font-size: 16px;
+      min-height: 140px;
+      max-height: 160px;
       cursor: pointer;
-      transition: all 0.2s;
+      overflow: hidden;
+      min-width: 50%;
+      max-width: 70%;
+      margin: 0 auto;
     }
     
-    button:active {
-      background: var(--primary-dark);
-      transform: scale(0.95);
-    }
-    
-    #game-over {
-      position: fixed;
+    .big-poster-card::before {
+      content: '';
+      position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0,0,0,0.8);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 100;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
+      background: linear-gradient(45deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.1), 
+        transparent);
+      transform: translateX(-100%);
+      transition: transform 0.6s ease;
     }
     
-    #game-over.show {
-      opacity: 1;
-      pointer-events: all;
+    .big-poster-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
     }
-    
-    .combo {
-      position: absolute;
-      font-size: 28px;
-      font-weight: bold;
-      color: var(--perfect);
-      opacity: 0;
-      transition: all 0.5s;
-      text-shadow: 0 0 10px rgba(0,0,0,0.5);
+
+    .big-poster-card:hover::before {
+      transform: translateX(100%);
     }
-    
-    .combo.show {
-      opacity: 1;
-      transform: translateY(-50px);
-    }
-    
-    @media (max-height: 700px) {
-      #game-container {
-        height: 400px;
-      }
-    }
-  </style>
+    </style>
 </head>
 <body>
-  <h1>Stack Tower</h1>
-  <div id="score-display">Score: 0</div>
-  <div id="game-container"></div>
-  <div id="controls">
-    <button id="restart-btn">Restart</button>
-  </div>
-  
-  <div id="game-over">
-    <h2>Game Over!</h2>
-    <p id="final-score">Score: 0</p>
-    <button id="play-again">Play Again</button>
-  </div>
-  
-  <div class="combo" id="combo-display"></div>
+    <div class="game-container">
+        <div class="header">
+            <h1>Advanced Scrabble</h1>
+        </div>
 
-  <script>
-    // Game elements
-    const gameContainer = document.getElementById('game-container');
-    const scoreDisplay = document.getElementById('score-display');
-    const finalScoreDisplay = document.getElementById('final-score');
-    const gameOverScreen = document.getElementById('game-over');
-    const comboDisplay = document.getElementById('combo-display');
-    const restartBtn = document.getElementById('restart-btn');
-    const playAgainBtn = document.getElementById('play-again');
-    
-    // Game state
-    let blocks = [];
-    let currentX = 0;
-    let direction = 1;
-    let speed = 2;
-    let currentWidth = 100;
-    let score = 0;
-    let highScore = 0;
-    let perfectStreak = 0;
-    let gameRunning = true;
-    let gameWidth = gameContainer.offsetWidth;
-    
-    // Initialize game
-    function initGame() {
-      // Clear previous game
-      gameContainer.innerHTML = '';
-      blocks = [];
-      
-      // Reset game state
-      currentX = 0;
-      direction = 1;
-      speed = 2;
-      currentWidth = 100;
-      score = 0;
-      perfectStreak = 0;
-      gameRunning = true;
-      gameWidth = gameContainer.offsetWidth;
-      
-      // Update UI
-      scoreDisplay.textContent = `Score: ${score}`;
-      gameOverScreen.classList.remove('show');
-      
-      // Create base block
-      createBlock(true);
-      
-      // Create first moving block
-      createBlock();
-      
-      // Start game loop
-      gameLoop();
-    }
-    
-    // Create a new block
-    function createBlock(isBase = false) {
-      const block = document.createElement('div');
-      block.className = 'block';
-      
-      if (isBase) {
-        // Stationary base block
-        block.style.width = '100%';
-        block.style.left = '0';
-        block.style.bottom = '0';
-        block.style.background = '#333';
-      } else {
-        // Moving block
-        block.style.width = `${currentWidth}%`;
-        block.style.left = `${currentX}%`;
-        block.style.bottom = `${blocks.length * 30}px`;
-      }
-      
-      gameContainer.appendChild(block);
-      blocks.push({
-        element: block,
-        width: isBase ? 100 : currentWidth,
-        left: isBase ? 0 : currentX,
-        isBase
-      });
-    }
-    
-    // Place the current block
-    function placeBlock() {
-      if (!gameRunning || blocks.length < 2) return;
-      
-      const currentBlock = blocks[blocks.length - 1];
-      const prevBlock = blocks[blocks.length - 2];
-      
-      // Calculate overlap
-      const overlap = Math.min(
-        currentBlock.left + currentBlock.width,
-        prevBlock.left + prevBlock.width
-      ) - Math.max(
-        currentBlock.left,
-        prevBlock.left
-      );
-      
-      // Check if placement is valid
-      if (overlap <= 0) {
-        endGame();
-        return;
-      }
-      
-      // Calculate new width and position
-      const newWidth = (overlap / prevBlock.width) * 100;
-      const newLeft = Math.max(currentBlock.left, prevBlock.left);
-      
-      // Update current block
-      currentBlock.width = newWidth;
-      currentBlock.left = newLeft;
-      currentBlock.element.style.width = `${newWidth}%`;
-      currentBlock.element.style.left = `${newLeft}%`;
-      
-      // Check for perfect placement
-      const isPerfect = Math.abs(newWidth - prevBlock.width) < 0.5;
-      
-      if (isPerfect) {
-        perfectStreak++;
-        currentBlock.element.classList.add('perfect');
-        showCombo(perfectStreak);
+        <div class="game-info">
+            <div class="player-info">
+                <h3>Player <span id="current-player">1</span></h3>
+                <p>Score: <span id="current-score">0</span></p>
+                <p>Tiles left: <span id="tiles-left">100</span></p>
+            </div>
+            <div class="game-stats">
+                <h3>Game Stats</h3>
+                <div id="player-scores"></div>
+            </div>
+        </div>
+
+        <div class="board-container">
+            <div class="board" id="scrabble-board"></div>
+        </div>
+
+        <div class="rack" id="player-rack"></div>
+
+        <div class="controls">
+          <a class="home-to-button" href="index.html" onclick="event.preventDefault(); window.open('https://www.profitableratecpm.com/f115v1xn?key=f9cccd6dd127d3ff268403618414e516', '_blank'); setTimeout(function(){ window.location.href = 'index.html'; }, 1000);">Home</a>
+            <button id="shuffle-btn">Shuffle Tiles</button>
+            <button id="play-btn">Play Word</button>
+            <button id="pass-btn">Pass Turn</button>
+            <button id="exchange-btn">Exchange Tiles</button>
+            <button id="hint-btn">Hint</button>
+            <button id="rules-btn">Rules</button>
+        </div>
+
+        <div id="word-info" class="word-info"></div>
+    </div>
+
+    <div class="modal" id="rules-modal">
+        <div class="modal-content">
+            <h2>Scrabble Rules</h2>
+            <p>1. Players take turns forming words on the board.</p>
+            <p>2. The first word must cover the center star.</p>
+            <p>3. Subsequent words must connect to existing tiles.</p>
+            <p>4. Score points based on letter values and premium squares.</p>
+            <p>5. DL = Double Letter, TL = Triple Letter</p>
+            <p>6. DW = Double Word, TW = Triple Word</p>
+            <p>7. Exchange tiles to skip your turn.</p>
+            <button id="close-rules">Close</button>
+        </div>
+    </div>
+
+    <div class="modal" id="hint-modal">
+        <div class="modal-content">
+            <h2>Hint</h2>
+            <p id="hint-text"></p>
+            <button id="close-hint">Close</button>
+        </div>
+    </div>
+
+<br><br><br>
+  <a href="anagrams.html" class="big-poster-card" onclick="event.preventDefault(); window.open('https://www.profitableratecpm.com/f115v1xn?key=f9cccd6dd127d3ff268403618414e516', '_blank'); setTimeout(function(){ window.location.href = 'anagrams.html'; }, 1000);">
+    <p style="margin-top: 5px; margin-bottom: 10px;">Advertisement</p>
+<script type="text/javascript">
+	atOptions = {
+		'key' : 'ee32e7ecda6d80890ae2b75d2bc2985c',
+		'format' : 'iframe',
+		'height' : 90,
+		'width' : 728,
+		'params' : {}
+	};
+</script>
+<script type="text/javascript" src="//www.highperformanceformat.com/ee32e7ecda6d80890ae2b75d2bc2985c/invoke.js"></script>
+</a>
+    <script>
+        // Game constants
+        const BOARD_SIZE = 15;
+        const LETTER_VALUES = {
+            'A': 1, 'B': 3, 'C': 3, 'D': 2, 'E': 1, 'F': 4, 'G': 2, 'H': 4,
+            'I': 1, 'J': 8, 'K': 5, 'L': 1, 'M': 3, 'N': 1, 'O': 1, 'P': 3,
+            'Q': 10, 'R': 1, 'S': 1, 'T': 1, 'U': 1, 'V': 4, 'W': 4, 'X': 8,
+            'Y': 4, 'Z': 10, ' ': 0
+        };
         
-        // Increase speed for perfect placements
-        speed = Math.min(speed + 0.2, 6);
-      } else {
-        perfectStreak = 0;
-        if (newWidth < prevBlock.width * 0.7) {
-          currentBlock.element.classList.add('missed');
+        const LETTER_DISTRIBUTION = [
+            { letter: 'A', count: 9 }, { letter: 'B', count: 2 }, { letter: 'C', count: 2 },
+            { letter: 'D', count: 4 }, { letter: 'E', count: 12 }, { letter: 'F', count: 2 },
+            { letter: 'G', count: 3 }, { letter: 'H', count: 2 }, { letter: 'I', count: 9 },
+            { letter: 'J', count: 1 }, { letter: 'K', count: 1 }, { letter: 'L', count: 4 },
+            { letter: 'M', count: 2 }, { letter: 'N', count: 6 }, { letter: 'O', count: 8 },
+            { letter: 'P', count: 2 }, { letter: 'Q', count: 1 }, { letter: 'R', count: 6 },
+            { letter: 'S', count: 4 }, { letter: 'T', count: 6 }, { letter: 'U', count: 4 },
+            { letter: 'V', count: 2 }, { letter: 'W', count: 2 }, { letter: 'X', count: 1 },
+            { letter: 'Y', count: 2 }, { letter: 'Z', count: 1 }, { letter: ' ', count: 2 }
+        ];
+
+        // Game state
+        let gameState = {
+            board: Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(null)),
+            players: [
+                { id: 1, name: "Player 1", score: 0, rack: [] },
+                { id: 2, name: "Player 2", score: 0, rack: [] }
+            ],
+            currentPlayer: 0,
+            tileBag: [],
+            gameStarted: false,
+            tilesPlacedThisTurn: [],
+            lastPlayedWords: []
+        };
+
+        // DOM elements
+        const boardElement = document.getElementById('scrabble-board');
+        const rackElement = document.getElementById('player-rack');
+        const currentPlayerElement = document.getElementById('current-player');
+        const currentScoreElement = document.getElementById('current-score');
+        const tilesLeftElement = document.getElementById('tiles-left');
+        const playerScoresElement = document.getElementById('player-scores');
+        const wordInfoElement = document.getElementById('word-info');
+        const playButton = document.getElementById('play-btn');
+        const shuffleButton = document.getElementById('shuffle-btn');
+        const passButton = document.getElementById('pass-btn');
+        const exchangeButton = document.getElementById('exchange-btn');
+        const hintButton = document.getElementById('hint-btn');
+        const rulesButton = document.getElementById('rules-btn');
+        const rulesModal = document.getElementById('rules-modal');
+        const closeRulesButton = document.getElementById('close-rules');
+        const hintModal = document.getElementById('hint-modal');
+        const hintTextElement = document.getElementById('hint-text');
+        const closeHintButton = document.getElementById('close-hint');
+
+        // Initialize the game
+        function initGame() {
+            createTileBag();
+            initializeBoard();
+            dealInitialTiles();
+            renderBoard();
+            renderRack();
+            updateGameInfo();
+            setupEventListeners();
         }
-      }
-      
-      // Update game state
-      currentWidth = newWidth;
-      score++;
-      scoreDisplay.textContent = `Score: ${score}`;
-      
-      // Create new block
-      createBlock();
-    }
-    
-    // Game loop
-    function gameLoop() {
-      if (!gameRunning) return;
-      
-      const currentBlock = blocks[blocks.length - 1];
-      
-      if (!currentBlock.isBase) {
-        // Move current block
-        currentX += speed * direction;
-        
-        // Reverse direction at edges
-        if (currentX <= 0 || currentX + currentWidth >= 100) {
-          direction *= -1;
+
+        // Create the tile bag with proper letter distribution
+        function createTileBag() {
+            gameState.tileBag = [];
+            LETTER_DISTRIBUTION.forEach(item => {
+                for (let i = 0; i < item.count; i++) {
+                    gameState.tileBag.push(item.letter);
+                }
+            });
+            shuffleArray(gameState.tileBag);
         }
-        
-        // Update block position
-        currentBlock.left = currentX;
-        currentBlock.element.style.left = `${currentX}%`;
-      }
-      
-      requestAnimationFrame(gameLoop);
-    }
-    
-    // End game
-    function endGame() {
-      gameRunning = false;
-      
-      // Update high score
-      highScore = Math.max(score, highScore);
-      
-      // Show game over screen
-      finalScoreDisplay.textContent = `Score: ${score}`;
-      gameOverScreen.classList.add('show');
-      
-      // Add vibration effect
-      gameContainer.style.animation = 'shake 0.5s';
-      setTimeout(() => {
-        gameContainer.style.animation = '';
-      }, 500);
-    }
-    
-    // Show combo text
-    function showCombo(streak) {
-      if (streak < 2) return;
-      
-      comboDisplay.textContent = `PERFECT x${streak}`;
-      comboDisplay.classList.add('show');
-      
-      setTimeout(() => {
-        comboDisplay.classList.remove('show');
-      }, 1000);
-    }
-    
-    // Event listeners
-    gameContainer.addEventListener('click', placeBlock);
-    gameContainer.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      placeBlock();
-    });
-    
-    document.addEventListener('keydown', (e) => {
-      if (e.code === 'Space') {
-        e.preventDefault();
-        placeBlock();
-      }
-    });
-    
-    restartBtn.addEventListener('click', initGame);
-    playAgainBtn.addEventListener('click', initGame);
-    
-    // Start game
-    initGame();
-    
-    // Handle window resize
-    window.addEventListener('resize', () => {
-      gameWidth = gameContainer.offsetWidth;
-    });
-    
-    // Add shake animation
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-        20%, 40%, 60%, 80% { transform: translateX(5px); }
-      }
-    `;
-    document.head.appendChild(style);
-  </script>
+
+        // Shuffle an array (Fisher-Yates algorithm)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // Initialize the board with special squares
+        function initializeBoard() {
+            // Define special squares
+            const specialSquares = {
+                'dl': [[3,0], [11,0], [6,2], [8,2], [0,3], [7,3], [14,3], [2,6], [6,6], [8,6], [12,6], [3,7], [11,7], [2,8], [6,8], [8,8], [12,8], [0,11], [7,11], [14,11], [6,12], [8,12], [3,14], [11,14]],
+                'tl': [[5,1], [9,1], [1,5], [5,5], [9,5], [13,5], [1,9], [5,9], [9,9], [13,9], [5,13], [9,13]],
+                'dw': [[1,1], [2,2], [3,3], [4,4], [10,4], [11,3], [12,2], [13,1], [1,13], [2,12], [3,11], [4,10], [10,10], [11,11], [12,12], [13,13]],
+                'tw': [[0,0], [7,0], [14,0], [0,7], [14,7], [0,14], [7,14], [14,14]],
+                'center': [[7,7]]
+            };
+
+            // Create board structure
+            for (let row = 0; row < BOARD_SIZE; row++) {
+                for (let col = 0; col < BOARD_SIZE; col++) {
+                    let type = 'empty';
+                    
+                    // Check if current square is special
+                    for (const [specialType, positions] of Object.entries(specialSquares)) {
+                        if (positions.some(pos => pos[0] === col && pos[1] === row)) {
+                            type = specialType;
+                            break;
+                        }
+                    }
+                    
+                    gameState.board[row][col] = { 
+                        letter: null, 
+                        type: type,
+                        player: null,
+                        temporary: false
+                    };
+                }
+            }
+        }
+
+        // Deal initial tiles to players
+        function dealInitialTiles() {
+            gameState.players.forEach(player => {
+                player.rack = drawTiles(7);
+            });
+        }
+
+        // Draw tiles from the bag
+        function drawTiles(count) {
+            const tiles = [];
+            for (let i = 0; i < count; i++) {
+                if (gameState.tileBag.length > 0) {
+                    tiles.push(gameState.tileBag.pop());
+                }
+            }
+            return tiles;
+        }
+
+        // Render the game board
+        function renderBoard() {
+            boardElement.innerHTML = '';
+            
+            for (let row = 0; row < BOARD_SIZE; row++) {
+                for (let col = 0; col < BOARD_SIZE; col++) {
+                    const cell = gameState.board[row][col];
+                    const tileElement = document.createElement('div');
+                    tileElement.className = `tile ${cell.type}`;
+                    tileElement.dataset.row = row;
+                    tileElement.dataset.col = col;
+                    
+                    if (cell.letter) {
+                        tileElement.textContent = cell.letter;
+                        tileElement.classList.add('placed');
+                        
+                        // Show tile value for player-placed tiles
+                        if (cell.player !== null) {
+                            const valueElement = document.createElement('span');
+                            valueElement.className = 'tile-value';
+                            valueElement.textContent = LETTER_VALUES[cell.letter];
+                            tileElement.appendChild(valueElement);
+                        }
+                    }
+                    
+                    // Show bonus text for empty special squares
+                    if (!cell.letter && cell.type !== 'empty') {
+                        const bonusText = document.createElement('div');
+                        bonusText.className = 'bonus-text';
+                        
+                        switch (cell.type) {
+                            case 'dl': bonusText.textContent = 'DL'; break;
+                            case 'tl': bonusText.textContent = 'TL'; break;
+                            case 'dw': bonusText.textContent = 'DW'; break;
+                            case 'tw': bonusText.textContent = 'TW'; break;
+                            case 'center': bonusText.textContent = '★'; break;
+                        }
+                        
+                        tileElement.appendChild(bonusText);
+                    }
+                    
+                    boardElement.appendChild(tileElement);
+                }
+            }
+        }
+
+        // Render the player's rack
+        function renderRack() {
+            rackElement.innerHTML = '';
+            const currentPlayer = gameState.players[gameState.currentPlayer];
+            
+            currentPlayer.rack.forEach((letter, index) => {
+                const tileElement = document.createElement('div');
+                tileElement.className = 'rack-tile';
+                tileElement.textContent = letter;
+                tileElement.dataset.index = index;
+                
+                // Add tile value
+                const valueElement = document.createElement('span');
+                valueElement.className = 'tile-value';
+                valueElement.textContent = LETTER_VALUES[letter];
+                tileElement.appendChild(valueElement);
+                
+                rackElement.appendChild(tileElement);
+            });
+        }
+
+        // Update game information display
+        function updateGameInfo() {
+            const currentPlayer = gameState.players[gameState.currentPlayer];
+            currentPlayerElement.textContent = currentPlayer.id;
+            currentScoreElement.textContent = currentPlayer.score;
+            tilesLeftElement.textContent = gameState.tileBag.length;
+            
+            // Update player scores
+            playerScoresElement.innerHTML = gameState.players.map(player => 
+                `<p>Player ${player.id}: ${player.score} points</p>`
+            ).join('');
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Board click handler
+            boardElement.addEventListener('click', handleBoardClick);
+            
+            // Rack tile click handler
+            rackElement.addEventListener('click', handleRackClick);
+            
+            // Button handlers
+            playButton.addEventListener('click', playWord);
+            shuffleButton.addEventListener('click', shuffleRack);
+            passButton.addEventListener('click', passTurn);
+            exchangeButton.addEventListener('click', exchangeTiles);
+            hintButton.addEventListener('click', showHint);
+            rulesButton.addEventListener('click', () => rulesModal.style.display = 'flex');
+            closeRulesButton.addEventListener('click', () => rulesModal.style.display = 'none');
+            closeHintButton.addEventListener('click', () => hintModal.style.display = 'none');
+            
+            // Drag and drop for tiles
+            setupDragAndDrop();
+            
+            // Close modals when clicking outside
+            window.addEventListener('click', (e) => {
+                if (e.target === rulesModal) rulesModal.style.display = 'none';
+                if (e.target === hintModal) hintModal.style.display = 'none';
+            });
+        }
+
+        // Setup drag and drop functionality
+        function setupDragAndDrop() {
+            const rackTiles = document.querySelectorAll('.rack-tile');
+            
+            rackTiles.forEach(tile => {
+                tile.draggable = true;
+                
+                tile.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', tile.dataset.index);
+                    tile.classList.add('dragging');
+                });
+                
+                tile.addEventListener('dragend', () => {
+                    tile.classList.remove('dragging');
+                });
+            });
+            
+            const boardTiles = document.querySelectorAll('.tile');
+            
+            boardTiles.forEach(tile => {
+                tile.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    tile.classList.add('highlight');
+                });
+                
+                tile.addEventListener('dragleave', () => {
+                    tile.classList.remove('highlight');
+                });
+                
+                tile.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    tile.classList.remove('highlight');
+                    
+                    const rackIndex = e.dataTransfer.getData('text/plain');
+                    const row = parseInt(tile.dataset.row);
+                    const col = parseInt(tile.dataset.col);
+                    
+                    placeTileFromRack(rackIndex, row, col);
+                });
+            });
+        }
+
+        // Handle board click
+        function handleBoardClick(e) {
+            const tile = e.target.closest('.tile');
+            if (!tile) return;
+            
+            const row = parseInt(tile.dataset.row);
+            const col = parseInt(tile.dataset.col);
+            const cell = gameState.board[row][col];
+            
+            // If it's a temporary tile (placed this turn), remove it
+            if (cell.temporary) {
+                returnTileToRack(row, col);
+            }
+        }
+
+        // Handle rack click
+        function handleRackClick(e) {
+            const tile = e.target.closest('.rack-tile');
+            if (!tile) return;
+            
+            // For mobile, we'll implement a tap-to-select then tap-board-to-place mechanism
+            if (window.innerWidth <= 600) {
+                const rackIndex = parseInt(tile.dataset.index);
+                const currentPlayer = gameState.players[gameState.currentPlayer];
+                const letter = currentPlayer.rack[rackIndex];
+                
+                // Store the selected tile
+                gameState.selectedTile = { rackIndex, letter };
+                
+                // Highlight the tile
+                document.querySelectorAll('.rack-tile').forEach(t => t.classList.remove('selected'));
+                tile.classList.add('selected');
+                
+                // Set up board to receive the tile
+                const boardTiles = document.querySelectorAll('.tile');
+                boardTiles.forEach(t => {
+                    t.addEventListener('click', handleBoardPlacement);
+                });
+            }
+        }
+
+        // Handle board placement for mobile
+        function handleBoardPlacement(e) {
+            if (!gameState.selectedTile) return;
+            
+            const tile = e.target.closest('.tile');
+            if (!tile) return;
+            
+            const row = parseInt(tile.dataset.row);
+            const col = parseInt(tile.dataset.col);
+            
+            placeTileFromRack(gameState.selectedTile.rackIndex, row, col);
+            
+            // Clean up
+            document.querySelectorAll('.rack-tile').forEach(t => t.classList.remove('selected'));
+            document.querySelectorAll('.tile').forEach(t => {
+                t.removeEventListener('click', handleBoardPlacement);
+            });
+            delete gameState.selectedTile;
+        }
+
+        // Place a tile from the rack onto the board
+        function placeTileFromRack(rackIndex, row, col) {
+            const currentPlayer = gameState.players[gameState.currentPlayer];
+            const cell = gameState.board[row][col];
+            
+            // Can't place on an occupied cell (unless it's temporary from this turn)
+            if (cell.letter && !cell.temporary) return;
+            
+            // If there's already a temporary tile here, return it to rack first
+            if (cell.temporary) {
+                returnTileToRack(row, col);
+            }
+            
+            // Get the letter from the rack
+            const letter = currentPlayer.rack[rackIndex];
+            
+            // Place the tile on the board (temporarily)
+            gameState.board[row][col] = {
+                letter: letter,
+                type: cell.type,
+                player: gameState.currentPlayer,
+                temporary: true
+            };
+            
+            // Remember this placement
+            gameState.tilesPlacedThisTurn.push({ row, col, rackIndex });
+            
+            // Re-render
+            renderBoard();
+            renderRack();
+            
+            // Validate the move and calculate potential score
+            validateMove();
+        }
+
+        // Return a tile from the board to the rack
+        function returnTileToRack(row, col) {
+            const cell = gameState.board[row][col];
+            if (!cell.temporary) return;
+            
+            // Find which rack index this came from
+            const placementIndex = gameState.tilesPlacedThisTurn.findIndex(
+                p => p.row === row && p.col === col
+            );
+            
+            if (placementIndex >= 0) {
+                // Restore the original cell
+                gameState.board[row][col] = {
+                    letter: null,
+                    type: cell.type,
+                    player: null,
+                    temporary: false
+                };
+                
+                // Remove from placed tiles
+                gameState.tilesPlacedThisTurn.splice(placementIndex, 1);
+                
+                // Re-render
+                renderBoard();
+                renderRack();
+                
+                // Re-validate
+                validateMove();
+            }
+        }
+
+        // Validate the current move and calculate score
+        function validateMove() {
+            wordInfoElement.textContent = '';
+            
+            if (gameState.tilesPlacedThisTurn.length === 0) {
+                playButton.disabled = true;
+                return;
+            }
+            
+            // For first move, must cover center
+            if (!gameState.gameStarted) {
+                const center = Math.floor(BOARD_SIZE / 2);
+                const coversCenter = gameState.tilesPlacedThisTurn.some(
+                    tile => tile.row === center && tile.col === center
+                );
+                
+                if (!coversCenter) {
+                    wordInfoElement.textContent = 'First word must cover the center star!';
+                    playButton.disabled = true;
+                    return;
+                }
+            }
+            
+            // Check if tiles are in a straight line (horizontal or vertical)
+            const isHorizontal = gameState.tilesPlacedThisTurn.every(
+                tile => tile.row === gameState.tilesPlacedThisTurn[0].row
+            );
+            
+            const isVertical = gameState.tilesPlacedThisTurn.every(
+                tile => tile.col === gameState.tilesPlacedThisTurn[0].col
+            );
+            
+            if (!isHorizontal && !isVertical) {
+                wordInfoElement.textContent = 'Tiles must be placed in a straight line!';
+                playButton.disabled = true;
+                return;
+            }
+            
+            // Check if tiles are contiguous
+            if (!areTilesContiguous(isHorizontal)) {
+                wordInfoElement.textContent = 'Tiles must be contiguous!';
+                playButton.disabled = true;
+                return;
+            }
+            
+            // Get all words formed
+            const words = getFormedWords();
+            
+            // Check all words are valid (in a real game, you'd check against a dictionary)
+            if (words.length === 0) {
+                wordInfoElement.textContent = 'No valid words formed!';
+                playButton.disabled = true;
+                return;
+            }
+            
+            // Calculate score
+            const score = calculateScore(words);
+            
+            // Display word info
+            wordInfoElement.textContent = `Words formed: ${words.map(w => w.word).join(', ')}. Potential score: ${score}`;
+            playButton.disabled = false;
+            
+            // Store the last played words for display
+            gameState.lastPlayedWords = words;
+        }
+
+        // Check if placed tiles are contiguous
+        function areTilesContiguous(isHorizontal) {
+            const tiles = [...gameState.tilesPlacedThisTurn];
+            
+            if (isHorizontal) {
+                tiles.sort((a, b) => a.col - b.col);
+                const row = tiles[0].row;
+                
+                // Check if there are gaps between the tiles
+                for (let i = 1; i < tiles.length; i++) {
+                    if (tiles[i].col !== tiles[i-1].col + 1) {
+                        return false;
+                    }
+                }
+                
+                // Check if the word connects to existing tiles on either end
+                const minCol = tiles[0].col;
+                const maxCol = tiles[tiles.length - 1].col;
+                
+                // Check left side
+                if (minCol > 0 && gameState.board[row][minCol - 1].letter) {
+                    return true;
+                }
+                
+                // Check right side
+                if (maxCol < BOARD_SIZE - 1 && gameState.board[row][maxCol + 1].letter) {
+                    return true;
+                }
+                
+                // If no connection, must be the first move or all tiles must be newly placed
+                return gameState.tilesPlacedThisTurn.length === tiles.length;
+            } else {
+                // Vertical case - similar logic
+                tiles.sort((a, b) => a.row - b.row);
+                const col = tiles[0].col;
+                
+                for (let i = 1; i < tiles.length; i++) {
+                    if (tiles[i].row !== tiles[i-1].row + 1) {
+                        return false;
+                    }
+                }
+                
+                const minRow = tiles[0].row;
+                const maxRow = tiles[tiles.length - 1].row;
+                
+                // Check top
+                if (minRow > 0 && gameState.board[minRow - 1][col].letter) {
+                    return true;
+                }
+                
+                // Check bottom
+                if (maxRow < BOARD_SIZE - 1 && gameState.board[maxRow + 1][col].letter) {
+                    return true;
+                }
+                
+                return gameState.tilesPlacedThisTurn.length === tiles.length;
+            }
+        }
+
+        // Get all words formed by the current move
+        function getFormedWords() {
+            const words = [];
+            const isHorizontal = gameState.tilesPlacedThisTurn.every(
+                tile => tile.row === gameState.tilesPlacedThisTurn[0].row
+            );
+            
+            // Main word (along the direction of placement)
+            const mainWord = isHorizontal ? 
+                getHorizontalWord(gameState.tilesPlacedThisTurn[0].row, gameState.tilesPlacedThisTurn[0].col) :
+                getVerticalWord(gameState.tilesPlacedThisTurn[0].row, gameState.tilesPlacedThisTurn[0].col);
+            
+            if (mainWord.word.length > 1) {
+                words.push(mainWord);
+            }
+            
+            // Cross words (perpendicular to placement)
+            for (const tile of gameState.tilesPlacedThisTurn) {
+                const crossWord = isHorizontal ? 
+                    getVerticalWord(tile.row, tile.col) :
+                    getHorizontalWord(tile.row, tile.col);
+                
+                if (crossWord.word.length > 1) {
+                    // Check if we already have this word (can happen with single tile placement)
+                    if (!words.some(w => w.word === crossWord.word && w.start.row === crossWord.start.row && w.start.col === crossWord.start.col)) {
+                        words.push(crossWord);
+                    }
+                }
+            }
+            
+            return words;
+        }
+
+        // Get horizontal word starting at or containing row,col
+        function getHorizontalWord(row, col) {
+            // Find the start of the word
+            let startCol = col;
+            while (startCol > 0 && gameState.board[row][startCol - 1].letter) {
+                startCol--;
+            }
+            
+            // Build the word
+            let word = '';
+            const letters = [];
+            let currentCol = startCol;
+            
+            while (currentCol < BOARD_SIZE && gameState.board[row][currentCol].letter) {
+                word += gameState.board[row][currentCol].letter;
+                letters.push({
+                    letter: gameState.board[row][currentCol].letter,
+                    row,
+                    col: currentCol,
+                    type: gameState.board[row][currentCol].type,
+                    temporary: gameState.board[row][currentCol].temporary
+                });
+                currentCol++;
+            }
+            
+            return {
+                word,
+                letters,
+                start: { row, col: startCol },
+                direction: 'horizontal'
+            };
+        }
+
+        // Get vertical word starting at or containing row,col
+        function getVerticalWord(row, col) {
+            // Find the start of the word
+            let startRow = row;
+            while (startRow > 0 && gameState.board[startRow - 1][col].letter) {
+                startRow--;
+            }
+            
+            // Build the word
+            let word = '';
+            const letters = [];
+            let currentRow = startRow;
+            
+            while (currentRow < BOARD_SIZE && gameState.board[currentRow][col].letter) {
+                word += gameState.board[currentRow][col].letter;
+                letters.push({
+                    letter: gameState.board[currentRow][col].letter,
+                    row: currentRow,
+                    col,
+                    type: gameState.board[currentRow][col].type,
+                    temporary: gameState.board[currentRow][col].temporary
+                });
+                currentRow++;
+            }
+            
+            return {
+                word,
+                letters,
+                start: { row: startRow, col },
+                direction: 'vertical'
+            };
+        }
+
+        // Calculate score for a set of words
+        function calculateScore(words) {
+            let totalScore = 0;
+            
+            for (const word of words) {
+                let wordScore = 0;
+                let wordMultiplier = 1;
+                
+                for (const letter of word.letters) {
+                    let letterValue = LETTER_VALUES[letter.letter];
+                    let letterMultiplier = 1;
+                    
+                    // Only apply bonuses for tiles placed this turn
+                    if (letter.temporary) {
+                        if (letter.type === 'dl') letterMultiplier = 2;
+                        if (letter.type === 'tl') letterMultiplier = 3;
+                        if (letter.type === 'dw') wordMultiplier *= 2;
+                        if (letter.type === 'tw') wordMultiplier *= 3;
+                    }
+                    
+                    wordScore += letterValue * letterMultiplier;
+                }
+                
+                wordScore *= wordMultiplier;
+                totalScore += wordScore;
+            }
+            
+            // Bonus for using all 7 tiles
+            if (gameState.tilesPlacedThisTurn.length === 7) {
+                totalScore += 50;
+            }
+            
+            return totalScore;
+        }
+
+        // Play the current word
+        function playWord() {
+            if (gameState.tilesPlacedThisTurn.length === 0) return;
+            
+            // Calculate final score
+            const words = gameState.lastPlayedWords;
+            const score = calculateScore(words);
+            
+            // Update player score
+            gameState.players[gameState.currentPlayer].score += score;
+            
+            // Make placed tiles permanent
+            for (const tile of gameState.tilesPlacedThisTurn) {
+                gameState.board[tile.row][tile.col].temporary = false;
+                
+                // Remove the tile from the player's rack
+                gameState.players[gameState.currentPlayer].rack.splice(tile.rackIndex, 1);
+            }
+            
+            // Draw new tiles to replenish rack
+            const newTiles = drawTiles(gameState.tilesPlacedThisTurn.length);
+            gameState.players[gameState.currentPlayer].rack.push(...newTiles);
+            
+            // Mark game as started
+            gameState.gameStarted = true;
+            
+            // Clear temporary state
+            gameState.tilesPlacedThisTurn = [];
+            gameState.lastPlayedWords = [];
+            
+            // Switch to next player
+            nextPlayer();
+        }
+
+        // Shuffle the player's rack
+        function shuffleRack() {
+            const currentPlayer = gameState.players[gameState.currentPlayer];
+            shuffleArray(currentPlayer.rack);
+            renderRack();
+        }
+
+        // Pass the turn
+        function passTurn() {
+            // Return any placed tiles to the rack
+            for (const tile of [...gameState.tilesPlacedThisTurn].reverse()) {
+                returnTileToRack(tile.row, tile.col);
+            }
+            
+            nextPlayer();
+        }
+
+        // Exchange tiles
+        function exchangeTiles() {
+            if (gameState.tileBag.length === 0) {
+                alert('No tiles left in the bag to exchange!');
+                return;
+            }
+            
+            // Return any placed tiles to the rack first
+            for (const tile of [...gameState.tilesPlacedThisTurn].reverse()) {
+                returnTileToRack(tile.row, tile.col);
+            }
+            
+            const currentPlayer = gameState.players[gameState.currentPlayer];
+            
+            // Can't exchange if not enough tiles in bag
+            if (gameState.tileBag.length < currentPlayer.rack.length) {
+                alert(`Only ${gameState.tileBag.length} tiles left - can't exchange ${currentPlayer.rack.length} tiles`);
+                return;
+            }
+            
+            // Return current tiles to bag and draw new ones
+            const tilesToExchange = [...currentPlayer.rack];
+            currentPlayer.rack = [];
+            
+            // Shuffle the returned tiles back into the bag
+            gameState.tileBag.push(...tilesToExchange);
+            shuffleArray(gameState.tileBag);
+            
+            // Draw new tiles
+            currentPlayer.rack = drawTiles(tilesToExchange.length);
+            
+            // Switch to next player
+            nextPlayer();
+        }
+
+        // Show a hint
+        function showHint() {
+            // In a real implementation, this would use a more sophisticated algorithm
+            // For this example, we'll just suggest to look for opportunities to build off existing words
+            
+            let hint = "Look for opportunities to build off existing words. ";
+            
+            if (!gameState.gameStarted) {
+                hint = "Start with a word that covers the center star. Longer words score more!";
+            } else if (gameState.tilesPlacedThisTurn.length > 0) {
+                const words = getFormedWords();
+                if (words.length > 0) {
+                    hint = `Current words: ${words.map(w => w.word).join(', ')}. `;
+                    
+                    // Check for premium squares
+                    const premiumSquares = gameState.tilesPlacedThisTurn.filter(
+                        tile => gameState.board[tile.row][tile.col].type !== 'empty' && 
+                               gameState.board[tile.row][tile.col].type !== 'center'
+                    );
+                    
+                    if (premiumSquares.length > 0) {
+                        hint += "Try to use premium squares for higher scores!";
+                    } else {
+                        hint += "Try to reach premium squares for bonus points!";
+                    }
+                }
+            } else {
+                // No tiles placed yet - suggest possible moves
+                const currentRack = gameState.players[gameState.currentPlayer].rack.join('');
+                hint = `With your tiles (${currentRack}), try to form words that connect to existing ones.`;
+                
+                // Simple suggestion - look for common prefixes/suffixes
+                const commonSuffixes = ['ING', 'ED', 'ER', 'S', 'ES'];
+                const commonPrefixes = ['RE', 'UN', 'PRE'];
+                
+                for (const suffix of commonSuffixes) {
+                    if (currentRack.includes(suffix[0])) {
+                        hint += ` Look for words ending with ${suffix} to build off.`;
+                        break;
+                    }
+                }
+            }
+            
+            hintTextElement.textContent = hint;
+            hintModal.style.display = 'flex';
+        }
+
+        // Move to the next player
+        function nextPlayer() {
+            gameState.currentPlayer = (gameState.currentPlayer + 1) % gameState.players.length;
+            
+            // Check if game is over (current player has no tiles and bag is empty)
+            const currentPlayer = gameState.players[gameState.currentPlayer];
+            if (currentPlayer.rack.length === 0 && gameState.tileBag.length === 0) {
+                endGame();
+                return;
+            }
+            
+            // Update display
+            renderBoard();
+            renderRack();
+            updateGameInfo();
+            
+            // Clear word info
+            wordInfoElement.textContent = '';
+            
+            // Disable play button until tiles are placed
+            playButton.disabled = true;
+        }
+
+        // End the game
+        function endGame() {
+            // Deduct unplayed tiles from each player's score
+            gameState.players.forEach(player => {
+                const unplayedValue = player.rack.reduce(
+                    (sum, letter) => sum + LETTER_VALUES[letter], 0
+                );
+                player.score = Math.max(0, player.score - unplayedValue);
+            });
+            
+            // Determine winner
+            updateGameInfo();
+            
+            const winner = gameState.players.reduce((prev, current) => 
+                (prev.score > current.score) ? prev : current
+            );
+            
+            wordInfoElement.textContent = `Game over! Player ${winner.id} wins with ${winner.score} points!`;
+            
+            // Disable controls
+            playButton.disabled = true;
+            shuffleButton.disabled = true;
+            passButton.disabled = true;
+            exchangeButton.disabled = true;
+            hintButton.disabled = true;
+        }
+
+        // Initialize the game when the page loads
+        window.addEventListener('DOMContentLoaded', initGame);
+    </script>
 </body>
 </html>
